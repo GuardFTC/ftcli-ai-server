@@ -7,7 +7,6 @@ import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.model.openai.OpenAiTokenCountEstimator;
 import dev.langchain4j.service.AiServices;
 import lombok.RequiredArgsConstructor;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -16,9 +15,8 @@ import org.springframework.context.annotation.Configuration;
  * @date 2026-05-28 14:39:05
  * @describe 智能助手配置类
  */
-@Configuration
+@Configuration(proxyBeanMethods = false)
 @RequiredArgsConstructor
-@EnableConfigurationProperties(AiChatMemoryProperties.class)
 public class AiAssistantConfig {
 
     /**
