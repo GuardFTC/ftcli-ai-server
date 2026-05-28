@@ -22,11 +22,5 @@
     "allDeclaredFields": true,
     "allDeclaredMethods": true,
     "allDeclaredConstructors": true
-  },
-  {
-    "name": "com.ftc.ftcli.ai.properties.AiChatMemoryProperties",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true
   }
 ]

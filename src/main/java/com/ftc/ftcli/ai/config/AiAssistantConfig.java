@@ -1,13 +1,12 @@
-package com.ftc.ftcli.ai.config;
+package com.ftc.ftcli.config.ai;
 
 import com.ftc.ftcli.ai.service.WebAiService;
 import com.ftc.ftcli.infra.RedisChatMemoryStore;
-import com.ftc.ftcli.ai.properties.AiChatMemoryProperties;
 import dev.langchain4j.memory.chat.TokenWindowChatMemory;
 import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.model.openai.OpenAiTokenCountEstimator;
 import dev.langchain4j.service.AiServices;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -17,7 +16,6 @@ import org.springframework.context.annotation.Configuration;
  * @describe 智能助手配置类
  */
 @Configuration(proxyBeanMethods = false)
-@RequiredArgsConstructor
 public class AiAssistantConfig {
 
     /**
@@ -31,9 +29,27 @@ public class AiAssistantConfig {
     private final RedisChatMemoryStore redisChatMemoryStore;
 
     /**
-     * AI聊天记忆配置属性
+     * 最大Token数
      */
-    private final AiChatMemoryProperties aiChatMemoryProperties;
+    @Value("${ai.chat-memory.max-tokens:95000}")
+    private int maxTokens;
+
+    /**
+     * Token计数估算器模型名称
+     */
+    @Value("${ai.chat-memory.token-estimator-model:gpt-4o}")
+    private String tokenEstimatorModel;
+
+    /**
+     * 构造方法
+     *
+     * @param model                聊天模型
+     * @param redisChatMemoryStore Redis存储
+     */
+    public AiAssistantConfig(ChatModel model, RedisChatMemoryStore redisChatMemoryStore) {
+        this.model = model;
+        this.redisChatMemoryStore = redisChatMemoryStore;
+    }
 
     /**
      * 创建Web问答服务
@@ -46,7 +62,7 @@ public class AiAssistantConfig {
                 .chatModel(model)
                 .chatMemoryProvider(memoryId -> TokenWindowChatMemory.builder()
                         .id(memoryId)
-                        .maxTokens(aiChatMemoryProperties.getMaxTokens(), new OpenAiTokenCountEstimator(aiChatMemoryProperties.getTokenEstimatorModel()))
+                        .maxTokens(maxTokens, new OpenAiTokenCountEstimator(tokenEstimatorModel))
                         .chatMemoryStore(redisChatMemoryStore)
                         .build())
                 .build();
