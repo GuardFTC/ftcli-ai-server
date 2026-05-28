@@ -1,4 +1,4 @@
-package com.ftc.ftcli.ai;
+package com.ftc.ftcli.ai.service;
 
 import dev.langchain4j.service.MemoryId;
 import dev.langchain4j.service.UserMessage;

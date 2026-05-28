@@ -1,7 +1,7 @@
 package com.ftc.ftcli.command.ai;
 
 import cn.hutool.core.util.StrUtil;
-import com.ftc.ftcli.ai.LocalAiService;
+import com.ftc.ftcli.ai.service.LocalAiService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import picocli.CommandLine;

@@ -1,6 +1,6 @@
 package com.ftc.ftcli.config.ai;
 
-import com.ftc.ftcli.ai.LocalAiService;
+import com.ftc.ftcli.ai.service.WebAiService;
 import com.ftc.ftcli.infra.RedisChatMemoryStore;
 import dev.langchain4j.memory.chat.TokenWindowChatMemory;
 import dev.langchain4j.model.chat.ChatModel;
@@ -30,19 +30,20 @@ public class AiAssistantConfig {
     private final RedisChatMemoryStore redisChatMemoryStore;
 
     /**
-     * 创建本地问答服务
+     * 创建Web问答服务
      *
-     * @return LocalAiService
+     * @return webAiService
      */
     @Bean
-    public LocalAiService localAiService() {
-        return AiServices.builder(LocalAiService.class)
+    public WebAiService webAiService() {
+        return AiServices.builder(WebAiService.class)
                 .chatModel(model)
                 .chatMemoryProvider(memoryId -> TokenWindowChatMemory.builder()
                         .id(memoryId)
                         .maxTokens(95000, new OpenAiTokenCountEstimator("gpt-4o"))
                         .chatMemoryStore(redisChatMemoryStore)
                         .build())
+                .systemMessage("")
                 .build();
     }
 }
