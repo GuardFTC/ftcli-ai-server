@@ -43,7 +43,6 @@ public class AiAssistantConfig {
                         .maxTokens(95000, new OpenAiTokenCountEstimator("gpt-4o"))
                         .chatMemoryStore(redisChatMemoryStore)
                         .build())
-                .systemMessage("")
                 .build();
     }
 }
