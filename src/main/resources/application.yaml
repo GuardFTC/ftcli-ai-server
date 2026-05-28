@@ -1,0 +1,9 @@
+spring:
+  main:
+    web-application-type: none  #禁用 Web 服务器
+    banner-mode: off  #禁用 Spring Banner
+    log-startup-info: false  #禁用启动日志
+
+logging:
+  level:
+    root: WARN  #只输出警告及以上级别
