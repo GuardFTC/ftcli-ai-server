@@ -1,9 +1,9 @@
+#服务器配置
+server:
+  port: 6666
+
 #Spring配置
 spring:
-  main:
-    web-application-type: none  #禁用 Web 服务器
-    banner-mode: off  #禁用 Spring Banner
-    log-startup-info: false  #禁用启动日志
 
   #应用配置
   application:
@@ -28,7 +28,7 @@ spring:
 langchain4j:
   open-ai:
     chat-model:
-      api-key: xxx
+      api-key: sk-5a0cc24d7cab4a1f8ec50236448011c4
       base-url: https://api.deepseek.com
       model-name: deepseek-chat
       temperature: 0.7
@@ -36,7 +36,7 @@ langchain4j:
       log-requests: true
       log-responses: true
     streaming-chat-model:
-      api-key: xxx
+      api-key: sk-5a0cc24d7cab4a1f8ec50236448011c4
       base-url: https://api.deepseek.com
       model-name: deepseek-chat
       temperature: 0.7
@@ -47,7 +47,7 @@ langchain4j:
 #日志配置
 logging:
   level:
-    root: WARN  #只输出警告及以上级别
+    root: INFO  #只输出警告及以上级别
 
 #AI配置
 ai:

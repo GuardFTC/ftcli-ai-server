@@ -22,10 +22,10 @@
 
     <dependencies>
 
-        <!-- Spring Boot Starter依赖 -->
+        <!-- SpringWeb依赖 -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter</artifactId>
+            <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
 
         <!--Spring Redis依赖-->
@@ -59,21 +59,6 @@
             <groupId>dev.langchain4j</groupId>
             <artifactId>langchain4j-reactor</artifactId>
             <version>${langchain4j.version}</version>
-        </dependency>
-
-        <!-- 命令行工具依赖 -->
-        <dependency>
-            <groupId>info.picocli</groupId>
-            <artifactId>picocli-spring-boot-starter</artifactId>
-            <version>4.7.7</version>
-        </dependency>
-
-        <!-- Picocli GraalVM 注解处理器（编译期自动生成 reflect-config） -->
-        <dependency>
-            <groupId>info.picocli</groupId>
-            <artifactId>picocli-codegen</artifactId>
-            <version>4.7.7</version>
-            <scope>provided</scope>
         </dependency>
 
         <!-- hutool依赖 -->
@@ -110,46 +95,10 @@
     <build>
         <plugins>
 
-            <!-- 编译插件（注册 Lombok + Picocli 注解处理器） -->
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <configuration>
-                    <annotationProcessorPaths>
-                        <path>
-                            <groupId>org.projectlombok</groupId>
-                            <artifactId>lombok</artifactId>
-                            <version>${lombok.version}</version>
-                        </path>
-                        <path>
-                            <groupId>info.picocli</groupId>
-                            <artifactId>picocli-codegen</artifactId>
-                            <version>4.7.7</version>
-                        </path>
-                    </annotationProcessorPaths>
-                    <compilerArgs>
-                        <arg>-Aproject=${project.groupId}/${project.artifactId}</arg>
-                    </compilerArgs>
-                </configuration>
-            </plugin>
-
             <!-- Spring Boot 打包插件 -->
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
-            </plugin>
-
-            <!-- GraalVM Native Image 编译插件 -->
-            <plugin>
-                <groupId>org.graalvm.buildtools</groupId>
-                <artifactId>native-maven-plugin</artifactId>
-                <configuration>
-                    <imageName>ftcli-java</imageName>
-                    <buildArgs>
-                        <buildArg>--no-fallback</buildArg>
-                        <buildArg>--initialize-at-build-time=com.alibaba.fastjson2.introspect.PropertyAccessorFactoryLambda,com.alibaba.fastjson2.introspect.PropertyAccessorFactoryUnsafe</buildArg>
-                    </buildArgs>
-                </configuration>
             </plugin>
         </plugins>
     </build>

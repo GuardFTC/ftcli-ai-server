@@ -12,8 +12,6 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 public class FtcliApplication {
 
     public static void main(String[] args) {
-        System.exit(SpringApplication.exit(
-                SpringApplication.run(FtcliApplication.class, args)
-        ));
+        SpringApplication.run(FtcliApplication.class, args);
     }
 }
