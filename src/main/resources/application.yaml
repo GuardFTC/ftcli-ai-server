@@ -67,3 +67,6 @@ ai:
   chat-memory:
     max-tokens: 95000
     token-estimator-model: gpt-4o
+  rag:
+    web-search:
+      api-key: xxx

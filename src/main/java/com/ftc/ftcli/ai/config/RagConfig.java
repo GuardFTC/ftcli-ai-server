@@ -1,5 +1,6 @@
 package com.ftc.ftcli.ai.config;
 
+import com.ftc.ftcli.ai.properties.WebSearchProperties;
 import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.rag.content.retriever.ContentRetriever;
 import dev.langchain4j.rag.content.retriever.WebSearchContentRetriever;
@@ -11,6 +12,7 @@ import dev.langchain4j.web.search.WebSearchEngine;
 import dev.langchain4j.web.search.tavily.TavilyWebSearchEngine;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -24,9 +26,12 @@ import java.util.Map;
 @Slf4j
 @Configuration
 @RequiredArgsConstructor
+@EnableConfigurationProperties(WebSearchProperties.class)
 public class RagConfig {
 
     private final ChatModel model;
+
+    private final WebSearchProperties webSearchProperties;
 
     @Bean
     public QueryTransformer queryTransformer() {
@@ -38,7 +43,7 @@ public class RagConfig {
 
         //1.创建 Web 搜索引擎
         WebSearchEngine webSearchEngine = TavilyWebSearchEngine.builder()
-                .apiKey("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")
+                .apiKey(webSearchProperties.getApiKey())
                 .build();
 
         //2.创建网络内容检索器
