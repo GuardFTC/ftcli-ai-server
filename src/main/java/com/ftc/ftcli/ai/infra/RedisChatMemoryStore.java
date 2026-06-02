@@ -1,4 +1,4 @@
-package com.ftc.ftcli.infra;
+package com.ftc.ftcli.ai.infra;
 
 import cn.hutool.core.util.StrUtil;
 import dev.langchain4j.data.message.ChatMessage;
