@@ -76,16 +76,6 @@ public class ToolRegistry implements ApplicationRunner {
         };
     }
 
-    /**
-     * 根据类型获取工具
-     *
-     * @param type 工具类型
-     * @return 工具描述 -> 工具执行器
-     */
-    public static Map<ToolSpecification, ToolExecutor> getToolsByType(String type) {
-        return TOOL_CACHE.getOrDefault(type, Map.of());
-    }
-
     @Override
     public void run(ApplicationArguments args) {
 
