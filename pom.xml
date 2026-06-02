@@ -74,6 +74,13 @@
             <version>${langchain4j.version}</version>
         </dependency>
 
+        <!-- langchain4j Tavily【RAG Web Search】依赖 -->
+        <dependency>
+            <groupId>dev.langchain4j</groupId>
+            <artifactId>langchain4j-web-search-engine-tavily</artifactId>
+            <version>${langchain4j.version}</version>
+        </dependency>
+
         <!-- springdoc-openapi-ui依赖 -->
         <dependency>
             <groupId>org.springdoc</groupId>
