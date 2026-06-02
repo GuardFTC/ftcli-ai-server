@@ -1,4 +1,4 @@
-package com.ftc.ftcli.infra;
+package com.ftc.ftcli.infra.sqlite;
 
 import cn.hutool.core.collection.CollUtil;
 import com.ftc.ftcli.entity.embedding.EmbeddingRecordEntity;
@@ -76,18 +76,26 @@ public class EmbeddingRecordRepository {
      * @param entity 记录实体
      */
     public void save(EmbeddingRecordEntity entity) {
+
+        //1.定义保存SQL
         String sql = "INSERT INTO embedding_record (file_name, file_path, file_name_md5, file_content_md5) VALUES (?, ?, ?, ?)";
+
+        //2.保存
         jdbcTemplate.update(sql, entity.getFileName(), entity.getFilePath(), entity.getFileNameMd5(), entity.getFileContentMd5());
     }
 
     /**
      * 更新文件内容MD5（文档内容变更时调用）
      *
-     * @param fileNameMd5    文件名MD5
-     * @param newContentMd5  新的文件内容MD5
+     * @param fileNameMd5   文件名MD5
+     * @param newContentMd5 新的文件内容MD5
      */
     public void updateContentMd5(String fileNameMd5, String newContentMd5) {
+
+        //1.定义更新SQL
         String sql = "UPDATE embedding_record SET file_content_md5 = ?, updated_at = datetime('now', 'localtime') WHERE file_name_md5 = ?";
+
+        //2.更新
         jdbcTemplate.update(sql, newContentMd5, fileNameMd5);
     }
 
@@ -104,7 +112,7 @@ public class EmbeddingRecordRepository {
             return Collections.emptySet();
         }
 
-        //2.构建IN查询的占位符
+        //2.构建IN查询的占位符SQL
         String placeholders = fileNameMd5List.stream().map(s -> "?").collect(Collectors.joining(","));
         String sql = "SELECT file_name_md5 FROM embedding_record WHERE file_name_md5 IN (" + placeholders + ")";
 
@@ -122,7 +130,7 @@ public class EmbeddingRecordRepository {
      * 行数据映射为实体
      *
      * @param row 行数据
-     * @return 实体
+     * @return 向量记录实体
      */
     private EmbeddingRecordEntity mapRowToEntity(Map<String, Object> row) {
         return EmbeddingRecordEntity.builder()

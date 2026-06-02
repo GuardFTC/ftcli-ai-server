@@ -1,4 +1,4 @@
-package com.ftc.ftcli.infra;
+package com.ftc.ftcli.infra.sqlite;
 
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.StrUtil;
