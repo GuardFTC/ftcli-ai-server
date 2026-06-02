@@ -24,11 +24,16 @@ spring:
           min-idle: 50
       timeout: 5000ms
 
+  #SQLite数据源配置
+  datasource:
+    url: jdbc:sqlite:data/ftcli.db
+    driver-class-name: org.sqlite.JDBC
+
 #LangChain4j配置
 langchain4j:
   open-ai:
     chat-model:
-      api-key: xxx
+      api-key: sk-5a0cc24d7cab4a1f8ec50236448011c4
       base-url: https://api.deepseek.com
       model-name: deepseek-chat
       temperature: 0.7
@@ -36,7 +41,7 @@ langchain4j:
       log-requests: true
       log-responses: true
     streaming-chat-model:
-      api-key: xxx
+      api-key: sk-5a0cc24d7cab4a1f8ec50236448011c4
       base-url: https://api.deepseek.com
       model-name: deepseek-chat
       temperature: 0.7
