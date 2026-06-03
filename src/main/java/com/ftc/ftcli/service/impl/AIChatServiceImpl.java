@@ -1,6 +1,7 @@
 package com.ftc.ftcli.service.impl;
 
 import cn.hutool.core.util.IdUtil;
+import com.ftc.ftcli.ai.assistant.LocalAiService;
 import com.ftc.ftcli.ai.assistant.WebAiService;
 import com.ftc.ftcli.entity.payload.ChatPayload;
 import com.ftc.ftcli.service.AiChatService;
@@ -21,6 +22,8 @@ public class AIChatServiceImpl implements AiChatService {
 
     private final WebAiService webAiService;
 
+    private final LocalAiService localAiService;
+
     @Override
     public String getChatId() {
         return IdUtil.fastSimpleUUID();
@@ -29,10 +32,28 @@ public class AIChatServiceImpl implements AiChatService {
     @Override
     public String chat(ChatPayload payload) {
         if (payload.isLocal()) {
-            return "暂不支持本地问答";
+            return chatByLocalAi(payload);
         } else {
             return chatByWebAi(payload);
         }
+    }
+
+    /**
+     * 通过本地问答
+     *
+     * @param payload 聊天参数
+     * @return 响应结果
+     */
+    private String chatByLocalAi(ChatPayload payload) {
+
+        //1.进行聊天
+        Result<String> aiResult = localAiService.chat(payload.getChatId(), payload.getUserMessage());
+
+        //2.打印相关日志，后续有需要的再补充
+        log.info("[AI] LocalAI Token使用情况:[{}]", aiResult.tokenUsage());
+
+        //3.返回
+        return aiResult.content();
     }
 
     /**
@@ -47,7 +68,7 @@ public class AIChatServiceImpl implements AiChatService {
         Result<String> aiResult = webAiService.chat(payload.getChatId(), payload.getUserMessage());
 
         //2.打印相关日志，后续有需要的再补充
-        log.info("[AI] Token使用情况:[{}]", aiResult.tokenUsage());
+        log.info("[AI] WebAI Token使用情况:[{}]", aiResult.tokenUsage());
 
         //3.返回
         return aiResult.content();

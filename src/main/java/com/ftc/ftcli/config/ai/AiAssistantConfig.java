@@ -1,5 +1,6 @@
 package com.ftc.ftcli.config.ai;
 
+import com.ftc.ftcli.ai.assistant.LocalAiService;
 import com.ftc.ftcli.ai.assistant.WebAiService;
 import com.ftc.ftcli.infra.redis.RedisChatMemoryStore;
 import com.ftc.ftcli.properties.chat.ChatMemoryProperties;
@@ -7,6 +8,7 @@ import dev.langchain4j.memory.chat.TokenWindowChatMemory;
 import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.model.openai.OpenAiTokenCountEstimator;
 import dev.langchain4j.rag.DefaultRetrievalAugmentor;
+import dev.langchain4j.rag.content.injector.ContentInjector;
 import dev.langchain4j.rag.query.router.QueryRouter;
 import dev.langchain4j.rag.query.transformer.QueryTransformer;
 import dev.langchain4j.service.AiServices;
@@ -36,15 +38,14 @@ public class AiAssistantConfig {
 
     private final ToolProvider toolProvider;
 
-    private final QueryRouter webAiQueryRouter;
-
     private final QueryTransformer queryTransformer;
 
-    /**
-     * 创建Web问答服务
-     *
-     * @return webAiService
-     */
+    private final QueryRouter webAiQueryRouter;
+
+    private final QueryRouter localAiQueryRouter;
+
+    public final ContentInjector contentInjector;
+
     @Bean
     public WebAiService webAiService() {
         return AiServices.builder(WebAiService.class)
@@ -58,6 +59,24 @@ public class AiAssistantConfig {
                 .retrievalAugmentor(DefaultRetrievalAugmentor.builder()
                         .queryTransformer(queryTransformer)
                         .queryRouter(webAiQueryRouter)
+                        .build())
+                .build();
+    }
+
+    @Bean
+    public LocalAiService localAiService() {
+        return AiServices.builder(LocalAiService.class)
+                .chatModel(model)
+                .chatMemoryProvider(memoryId -> TokenWindowChatMemory.builder()
+                        .id(memoryId)
+                        .maxTokens(chatMemoryProperties.getMaxTokens(), new OpenAiTokenCountEstimator(chatMemoryProperties.getTokenEstimatorModel()))
+                        .chatMemoryStore(redisChatMemoryStore)
+                        .build())
+                .toolProvider(toolProvider)
+                .retrievalAugmentor(DefaultRetrievalAugmentor.builder()
+                        .queryTransformer(queryTransformer)
+                        .queryRouter(localAiQueryRouter)
+                        .contentInjector(contentInjector)
                         .build())
                 .build();
     }

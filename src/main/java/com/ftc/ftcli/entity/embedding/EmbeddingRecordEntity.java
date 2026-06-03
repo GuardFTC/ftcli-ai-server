@@ -72,6 +72,7 @@ public class EmbeddingRecordEntity {
         String fileNameMD5 = DigestUtil.md5Hex(fileName);
 
         //6.文档设置相关元数据
+        doc.metadata().put("full_path", fileName);
         doc.metadata().put("file_name_md5", fileNameMD5);
 
         //7.生成MD5,返回

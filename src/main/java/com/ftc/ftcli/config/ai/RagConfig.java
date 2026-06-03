@@ -8,7 +8,10 @@ import dev.langchain4j.data.segment.TextSegment;
 import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.model.embedding.EmbeddingModel;
 import dev.langchain4j.model.openai.OpenAiTokenCountEstimator;
+import dev.langchain4j.rag.content.injector.ContentInjector;
+import dev.langchain4j.rag.content.injector.DefaultContentInjector;
 import dev.langchain4j.rag.content.retriever.ContentRetriever;
+import dev.langchain4j.rag.content.retriever.EmbeddingStoreContentRetriever;
 import dev.langchain4j.rag.content.retriever.WebSearchContentRetriever;
 import dev.langchain4j.rag.query.router.LanguageModelQueryRouter;
 import dev.langchain4j.rag.query.router.QueryRouter;
@@ -24,7 +27,10 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import java.util.List;
 import java.util.Map;
+
+import static java.util.Arrays.asList;
 
 /**
  * @author 冯铁城 [17615007230@163.com]
@@ -88,5 +94,35 @@ public class RagConfig {
         return new LanguageModelQueryRouter(model, Map.of(
                 webSearchContentRetriever, "用于查询实时信息、最新新闻、时事热点、技术框架最新版本、产品价格、赛事结果等需要联网获取的动态内容。不要用于回答编程概念、语法规则、设计模式等稳定的知识性问题。"
         ));
+    }
+
+    @Bean
+    public QueryRouter localAiQueryRouter() {
+
+        //1.创建文档检索器
+        ContentRetriever contentRetriever = EmbeddingStoreContentRetriever.builder()
+                .embeddingModel(embeddingModel)
+                .embeddingStore(embeddingStore)
+                .maxResults(5)
+                .minScore(0.5)
+                .build();
+
+        //2.创建自定义查询路由器：默认使用文档检索器
+        return query -> {
+
+            //3.返回检索器
+            return List.of(contentRetriever);
+        };
+    }
+
+    @Bean
+    public ContentInjector contentInjector() {
+        return DefaultContentInjector.builder()
+                .metadataKeysToInclude(asList(
+                        "absolute_directory_path",
+                        "file_name",
+                        "full_path"
+                ))
+                .build();
     }
 }
