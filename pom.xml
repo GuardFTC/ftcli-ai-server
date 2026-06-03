@@ -86,6 +86,12 @@
             <groupId>dev.langchain4j</groupId>
             <artifactId>langchain4j-community-zhipu-ai</artifactId>
             <version>${langchain4j.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>dev.langchain4j</groupId>
+                    <artifactId>langchain4j-http-client-jdk</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <!-- langchain4j Chroma依赖 【Chroma作为Embedding数据源】-->
@@ -93,6 +99,12 @@
             <groupId>dev.langchain4j</groupId>
             <artifactId>langchain4j-chroma</artifactId>
             <version>${langchain4j.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>dev.langchain4j</groupId>
+                    <artifactId>langchain4j-http-client-jdk</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <!-- springdoc-openapi-ui依赖 -->

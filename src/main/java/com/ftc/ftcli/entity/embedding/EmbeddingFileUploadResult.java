@@ -1,8 +1,11 @@
 package com.ftc.ftcli.entity.embedding;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -11,11 +14,13 @@ import java.util.List;
  * @describe 文件上传结果
  */
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class EmbeddingFileUploadResult {
 
     @Schema(description = "新增文件列表")
-    List<String> addFiles;
+    List<String> addFiles = new ArrayList<>();
 
     @Schema(description = "更新文件列表")
-    List<String> updateFiles;
+    List<String> updateFiles = new ArrayList<>();
 }

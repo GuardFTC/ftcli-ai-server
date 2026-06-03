@@ -8,10 +8,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -54,11 +51,11 @@ public class EmbeddingRecordRepository {
      * @param fileNameMd5List 文件名MD5集合
      * @return 已存在的记录列表
      */
-    public List<EmbeddingRecordEntity> findAllByMd5(List<String> fileNameMd5List) {
+    public Set<EmbeddingRecordEntity> findAllByMd5(Set<String> fileNameMd5List) {
 
         //1.判空
         if (CollUtil.isEmpty(fileNameMd5List)) {
-            return Collections.emptyList();
+            return Collections.emptySet();
         }
 
         //2.构建IN查询占位符
@@ -70,11 +67,11 @@ public class EmbeddingRecordRepository {
 
         //4.判空
         if (CollUtil.isEmpty(rows)) {
-            return Collections.emptyList();
+            return Collections.emptySet();
         }
 
         //5.映射返回
-        return rows.stream().map(this::mapRowToEntity).toList();
+        return rows.stream().map(this::mapRowToEntity).collect(Collectors.toSet());
     }
 
     /**
