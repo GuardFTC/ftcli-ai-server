@@ -9,6 +9,7 @@ import dev.langchain4j.service.Result;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import reactor.core.publisher.Flux;
 
 /**
  * @author 冯铁城 [17615007230@163.com]
@@ -35,6 +36,15 @@ public class AIChatServiceImpl implements AiChatService {
             return chatByLocalAi(payload);
         } else {
             return chatByWebAi(payload);
+        }
+    }
+
+    @Override
+    public Flux<String> chatStream(ChatPayload payload) {
+        if (payload.getIsLocal()) {
+            return localAiService.chatStream(payload.getChatId(), payload.getUserMessage());
+        } else {
+            return webAiService.chatStream(payload.getChatId(), payload.getUserMessage());
         }
     }
 

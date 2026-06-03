@@ -8,6 +8,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
+import reactor.core.publisher.Flux;
 
 /**
  * @author 冯铁城 [17615007230@163.com]
@@ -43,6 +44,19 @@ public class AIChatController {
         //1.进行聊天
         String aiResponse = aiChatService.chat(payload);
         log.info("[AI] 聊天 出参:[{}]", aiResponse);
+
+        //2.返回
+        return RestfulResult.Success.getOrUpdateData(aiResponse);
+    }
+
+    @PostMapping("/chat/stream")
+    @Operation(summary = "AI聊天")
+    public RestfulResult<Flux<String>> chatStream(@RequestBody ChatPayload payload) {
+        log.info("[AI] 流式聊天 入参:[{}]", payload);
+
+        //1.进行聊天
+        Flux<String> aiResponse = aiChatService.chatStream(payload);
+        log.info("[AI] 流式聊天 出参:[{}]", aiResponse);
 
         //2.返回
         return RestfulResult.Success.getOrUpdateData(aiResponse);

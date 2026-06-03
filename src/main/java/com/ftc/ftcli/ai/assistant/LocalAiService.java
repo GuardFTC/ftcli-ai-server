@@ -4,6 +4,7 @@ import dev.langchain4j.service.MemoryId;
 import dev.langchain4j.service.Result;
 import dev.langchain4j.service.SystemMessage;
 import dev.langchain4j.service.UserMessage;
+import reactor.core.publisher.Flux;
 
 /**
  * @author 冯铁城 [17615007230@163.com]
@@ -21,4 +22,14 @@ public interface LocalAiService {
      */
     @SystemMessage(fromResource = "prompt/local-service.markdown")
     Result<String> chat(@MemoryId String chatId, @UserMessage String userMessage);
+
+    /**
+     * 流式聊天
+     *
+     * @param chatId      会话ID
+     * @param userMessage 用户消息
+     * @return 响应结果
+     */
+    @SystemMessage(fromResource = "prompt/web-service.markdown")
+    Flux<String> chatStream(@MemoryId String chatId, @UserMessage String userMessage);
 }

@@ -1,6 +1,7 @@
 package com.ftc.ftcli.service;
 
 import com.ftc.ftcli.entity.payload.ChatPayload;
+import reactor.core.publisher.Flux;
 
 /**
  * @author 冯铁城 [17615007230@163.com]
@@ -23,4 +24,12 @@ public interface AiChatService {
      * @return 响应结果
      */
     String chat(ChatPayload payload);
+
+    /**
+     * 流式聊天
+     *
+     * @param payload 聊天参数
+     * @return 响应结果
+     */
+    Flux<String> chatStream(ChatPayload payload);
 }

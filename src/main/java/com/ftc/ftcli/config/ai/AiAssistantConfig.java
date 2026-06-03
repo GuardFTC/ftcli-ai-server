@@ -6,6 +6,7 @@ import com.ftc.ftcli.infra.redis.RedisChatMemoryStore;
 import com.ftc.ftcli.properties.chat.ChatMemoryProperties;
 import dev.langchain4j.memory.chat.TokenWindowChatMemory;
 import dev.langchain4j.model.chat.ChatModel;
+import dev.langchain4j.model.chat.StreamingChatModel;
 import dev.langchain4j.model.openai.OpenAiTokenCountEstimator;
 import dev.langchain4j.rag.DefaultRetrievalAugmentor;
 import dev.langchain4j.rag.content.injector.ContentInjector;
@@ -32,6 +33,8 @@ public class AiAssistantConfig {
 
     private final ChatModel model;
 
+    private final StreamingChatModel streamingModel;
+
     private final ChatMemoryProperties chatMemoryProperties;
 
     private final RedisChatMemoryStore redisChatMemoryStore;
@@ -50,6 +53,7 @@ public class AiAssistantConfig {
     public WebAiService webAiService() {
         return AiServices.builder(WebAiService.class)
                 .chatModel(model)
+                .streamingChatModel(streamingModel)
                 .chatMemoryProvider(memoryId -> TokenWindowChatMemory.builder()
                         .id(memoryId)
                         .maxTokens(chatMemoryProperties.getMaxTokens(), new OpenAiTokenCountEstimator(chatMemoryProperties.getTokenEstimatorModel()))
@@ -67,6 +71,7 @@ public class AiAssistantConfig {
     public LocalAiService localAiService() {
         return AiServices.builder(LocalAiService.class)
                 .chatModel(model)
+                .streamingChatModel(streamingModel)
                 .chatMemoryProvider(memoryId -> TokenWindowChatMemory.builder()
                         .id(memoryId)
                         .maxTokens(chatMemoryProperties.getMaxTokens(), new OpenAiTokenCountEstimator(chatMemoryProperties.getTokenEstimatorModel()))
