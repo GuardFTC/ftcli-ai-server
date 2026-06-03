@@ -45,6 +45,11 @@ public class AIEmbeddingServiceImpl implements AIEmbeddingService {
     private final EmbeddingRecordRepository embeddingRecordRepository;
 
     @Override
+    public List<EmbeddingRecordEntity> getDocs() {
+        return embeddingRecordRepository.findAll();
+    }
+
+    @Override
     public EmbeddingFileUploadResult upload(EmbeddingFileUploadPayload payload) {
 
         //1.获取文档路径

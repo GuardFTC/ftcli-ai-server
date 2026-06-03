@@ -2,16 +2,16 @@ package com.ftc.ftcli.controller;
 
 import com.ftc.ftcli.entity.embedding.EmbeddingFileUploadPayload;
 import com.ftc.ftcli.entity.embedding.EmbeddingFileUploadResult;
+import com.ftc.ftcli.entity.embedding.EmbeddingRecordEntity;
 import com.ftc.ftcli.entity.result.RestfulResult;
 import com.ftc.ftcli.service.AIEmbeddingService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 /**
  * @author 冯铁城 [17615007230@163.com]
@@ -27,7 +27,19 @@ public class AIEmbeddingController {
 
     private final AIEmbeddingService aiEmbeddingService;
 
-    @PostMapping
+    @GetMapping("docs")
+    @Operation(summary = "查询文档")
+    public RestfulResult<List<EmbeddingRecordEntity>> getDocs() {
+
+        //1.查询文档
+        List<EmbeddingRecordEntity> docs = aiEmbeddingService.getDocs();
+        log.info("[AI] 查询文档 出参:[{}]", docs);
+
+        //3.返回
+        return RestfulResult.Success.getOrUpdateData(docs);
+    }
+
+    @PostMapping("docs")
     @Operation(summary = "新增文档")
     public RestfulResult<EmbeddingFileUploadResult> upload(@RequestBody EmbeddingFileUploadPayload payload) {
 

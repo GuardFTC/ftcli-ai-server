@@ -31,7 +31,7 @@ public class EmbeddingRecordRepository {
     public List<EmbeddingRecordEntity> findAll() {
 
         //1.定义SQL
-        String sql = "SELECT id, file_name, file_path, file_name_md5, file_content_md5, created_at, updated_at FROM embedding_record";
+        String sql = "SELECT id, file_name, file_path, file_name_md5, file_content_md5, created_at, updated_at FROM embedding_record order by updated_at desc,id asc";
 
         //2.查询
         List<Map<String, Object>> rows = jdbcTemplate.queryForList(sql);

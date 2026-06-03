@@ -1,6 +1,8 @@
 package com.ftc.ftcli.ai.assistant;
 
 import dev.langchain4j.service.MemoryId;
+import dev.langchain4j.service.Result;
+import dev.langchain4j.service.SystemMessage;
 import dev.langchain4j.service.UserMessage;
 
 /**
@@ -13,9 +15,10 @@ public interface LocalAiService {
     /**
      * 聊天
      *
-     * @param userId      用户ID
+     * @param chatId      会话ID
      * @param userMessage 用户消息
      * @return 响应结果
      */
-    String chat(@MemoryId String userId, @UserMessage String userMessage);
+    @SystemMessage(fromResource = "prompt/local-service.markdown")
+    Result<String> chat(@MemoryId String chatId, @UserMessage String userMessage);
 }
