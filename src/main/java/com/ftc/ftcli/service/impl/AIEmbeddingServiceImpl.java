@@ -16,7 +16,6 @@ import dev.langchain4j.store.embedding.filter.Filter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.io.File;
 import java.nio.file.Path;
@@ -44,7 +43,6 @@ public class AIEmbeddingServiceImpl implements AIEmbeddingService {
     private final EmbeddingRecordRepository embeddingRecordRepository;
 
     @Override
-    @Transactional
     public EmbeddingFileUploadResult upload(EmbeddingFileUploadPayload payload) {
 
         //1.获取文档路径
@@ -186,16 +184,26 @@ public class AIEmbeddingServiceImpl implements AIEmbeddingService {
                 .map(EmbeddingRecordEntity::doc2Record)
                 .toList();
 
-        //3.写入文档记录
-        embeddingRecordRepository.saveBatch(newRecords);
-
-        //4.将新文档写入向量数据库
-        ingestor.ingest(newDocsMap.values().stream().toList());
-
-        //5.解析出新增文件列表，返回
-        return newRecords.stream()
+        //3.解析出新增文件列表
+        List<String> newFiles = newRecords.stream()
                 .map(EmbeddingRecordEntity::getFullPath)
                 .toList();
+
+        //4.写入向量数据库前，先按file_name_md5清理可能残留的旧向量（保证ingest幂等，防止重试产生重复向量），再写入新向量
+        try {
+            Filter filter = metadataKey("file_name_md5").isIn(newDocsMap.keySet());
+            embeddingStore.removeAll(filter);
+            ingestor.ingest(newDocsMap.values().stream().toList());
+        } catch (Exception e) {
+            log.error("[AI] 新增文档 向量写入失败，本次不写入文档记录，可重新上传重试。文件:[{}]", newFiles, e);
+            throw e;
+        }
+
+        //5.向量写入成功后，最后写入文档记录（SQLite作为唯一事实源，失败可靠下次上传自愈）
+        embeddingRecordRepository.saveBatch(newRecords);
+
+        //6.解析出新增文件列表，返回
+        return newFiles;
     }
 
     /**
@@ -225,21 +233,25 @@ public class AIEmbeddingServiceImpl implements AIEmbeddingService {
                 .map(existDocsMap::get)
                 .toList();
 
-        //4.更新文档记录
-        embeddingRecordRepository.updateBatch(updateDocRecords);
-
-        //5.根据元数据file_name_md5 删除向量数据库中的元数据
-        for (String fileNameMd5 : updateDocsNameSet) {
-            Filter filter = metadataKey("file_name_md5").isEqualTo(fileNameMd5);
-            embeddingStore.removeAll(filter);
-        }
-
-        //6.将更新后的文档写入向量数据库
-        ingestor.ingest(updateDocs);
-
-        //7.解析出更新文件列表，返回
-        return updateDocRecords.stream()
+        //4.解析出更新文件列表，返回
+        List<String> updateFiles = updateDocRecords.stream()
                 .map(EmbeddingRecordEntity::getFullPath)
                 .toList();
+
+        //5.先按file_name_md5批量删除旧向量，再写入更新后的向量
+        try {
+            Filter filter = metadataKey("file_name_md5").isIn(updateDocsNameSet);
+            embeddingStore.removeAll(filter);
+            ingestor.ingest(updateDocs);
+        } catch (Exception e) {
+            log.error("[AI] 新增文档 向量更新失败，本次不更新文档记录，可重新上传重试。文件:[{}]", updateFiles, e);
+            throw e;
+        }
+
+        //6.向量更新成功后，最后更新文档记录（SQLite作为唯一事实源，失败可靠下次上传自愈）
+        embeddingRecordRepository.updateBatch(updateDocRecords);
+
+        //7.解析出更新文件列表，返回
+        return updateFiles;
     }
 }
