@@ -20,7 +20,9 @@ import org.springframework.stereotype.Service;
 import java.io.File;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.*;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import static dev.langchain4j.data.document.loader.FileSystemDocumentLoader.loadDocumentsRecursively;
@@ -103,7 +105,7 @@ public class AIEmbeddingServiceImpl implements AIEmbeddingService {
 
         //2.判定路径文档是否存在
         if (!uploadFile.exists()) {
-            return new HashMap<>();
+            return Map.of();
         }
 
         //3.判定文档是目录还是文档
@@ -133,10 +135,10 @@ public class AIEmbeddingServiceImpl implements AIEmbeddingService {
     private Map<String, EmbeddingRecordEntity> getExistDocRecordsMap(Map<String, Document> docsMap) {
 
         //1.获取上传文档名MD5 Set
-        Set<String> docNameMD5Map = docsMap.keySet();
+        Set<String> docNameMD5Set = docsMap.keySet();
 
         //2.根据上传文档名MD5 Set，查询已写入的文档记录
-        Set<EmbeddingRecordEntity> existDocsRecord = embeddingRecordRepository.findAllByMd5(docNameMD5Map);
+        Set<EmbeddingRecordEntity> existDocsRecord = embeddingRecordRepository.findAllByMd5(docNameMD5Set);
 
         //3.解析为已写入文档名MD5-文档记录 Map，返回
         return existDocsRecord.stream()
@@ -176,7 +178,7 @@ public class AIEmbeddingServiceImpl implements AIEmbeddingService {
 
         //1.为空直接返回
         if (CollUtil.isEmpty(newDocsMap)) {
-            return new ArrayList<>();
+            return List.of();
         }
 
         //2.转换为EmbeddingRecordEntity
@@ -218,7 +220,7 @@ public class AIEmbeddingServiceImpl implements AIEmbeddingService {
 
         //1.为空直接返回
         if (CollUtil.isEmpty(updateDocsNameSet)) {
-            return new ArrayList<>();
+            return List.of();
         }
 
         //2.过滤出文档内容发生更新的文档记录
