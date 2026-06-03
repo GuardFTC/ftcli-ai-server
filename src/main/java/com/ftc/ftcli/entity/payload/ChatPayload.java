@@ -12,7 +12,7 @@ import lombok.Data;
 public class ChatPayload {
 
     @Schema(description = "是否基于本地文库进行问答")
-    private boolean isLocal;
+    private Boolean isLocal;
 
     @Schema(description = "会话ID")
     private String chatId;

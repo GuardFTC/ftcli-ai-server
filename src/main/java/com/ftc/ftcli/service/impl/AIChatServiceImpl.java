@@ -31,7 +31,7 @@ public class AIChatServiceImpl implements AiChatService {
 
     @Override
     public String chat(ChatPayload payload) {
-        if (payload.isLocal()) {
+        if (payload.getIsLocal()) {
             return chatByLocalAi(payload);
         } else {
             return chatByWebAi(payload);
