@@ -21,9 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.io.File;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static dev.langchain4j.data.document.loader.FileSystemDocumentLoader.loadDocumentsRecursively;
@@ -72,7 +70,7 @@ public class AIEmbeddingServiceImpl implements AIEmbeddingService {
         log.info("[AI] 新增文档 新增文档数量:[{}]", newDocsMap.size());
 
         //6.新增文档，写入文档记录
-        addNewDocs(newDocsMap);
+        List<String> newFiles = addNewDocs(newDocsMap);
 
         //7.获取已存在文档
         Map<String, Document> existDocsMap = partitionedDocsMap.getOrDefault(true, Map.of());
@@ -86,32 +84,33 @@ public class AIEmbeddingServiceImpl implements AIEmbeddingService {
                 .collect(Collectors.toSet());
         log.info("[AI] 新增文档 文档内容更新数量:[{}]", updateDocsNameSet.size());
 
-        //9.已存在文档，如果文件内容发生更新，写入文档记录
-        updateChangeDocs(updateDocsNameSet, existDocsMap, existDocRecordsMap);
-        
-        return null;
+        //9.已存在文档，如果文档内容发生更新，写入文档记录
+        List<String> updateFiles = updateChangeDocs(updateDocsNameSet, existDocsMap, existDocRecordsMap);
+
+        //10.构建结果返回
+        return new EmbeddingFileUploadResult(newFiles, updateFiles);
     }
 
     /**
      * 加载文档
      *
-     * @param filePath 文件路径
-     * @return 文件名MD5-文档Map
+     * @param filePath 文档路径
+     * @return 文档名MD5-文档Map
      */
     private static Map<String, Document> loadDocs(String filePath) {
 
-        //1.获取文件路径
+        //1.获取文档路径
         Path path = Paths.get(filePath);
         File uploadFile = path.toFile();
 
-        //2.判定路径文件是否存在
+        //2.判定路径文档是否存在
         if (!uploadFile.exists()) {
-            return null;
+            return new HashMap<>();
         }
 
-        //3.判定文件是目录还是文件
+        //3.判定文档是目录还是文档
         //如果是目录,递归获取目录下全部文档
-        //如果是文件,则直接获取文件
+        //如果是文档,则直接获取文档
         List<Document> documents;
         if (uploadFile.isDirectory()) {
             documents = loadDocumentsRecursively(path, new TextDocumentParser());
@@ -119,7 +118,7 @@ public class AIEmbeddingServiceImpl implements AIEmbeddingService {
             documents = List.of(FileSystemDocumentLoader.loadDocument(path, new TextDocumentParser()));
         }
 
-        //4.解析为文件名MD5-文档Map，返回
+        //4.解析为文档名MD5-文档Map，返回
         return documents.stream().collect(Collectors.toMap(
                 EmbeddingRecordEntity::getFileNameMD5AndSetDocMetaData,
                 doc -> doc,
@@ -130,18 +129,18 @@ public class AIEmbeddingServiceImpl implements AIEmbeddingService {
     /**
      * 获取已存在文档记录Map
      *
-     * @param docsMap 文件名MD5-文档Map
-     * @return 文件名MD5-文档记录Map
+     * @param docsMap 文档名MD5-文档Map
+     * @return 文档名MD5-文档记录Map
      */
     private Map<String, EmbeddingRecordEntity> getExistDocRecordsMap(Map<String, Document> docsMap) {
 
-        //1.获取上传文件名MD5 Set
+        //1.获取上传文档名MD5 Set
         Set<String> docNameMD5Map = docsMap.keySet();
 
-        //2.根据上传文件名MD5 Set，查询已写入的文档记录
+        //2.根据上传文档名MD5 Set，查询已写入的文档记录
         Set<EmbeddingRecordEntity> existDocsRecord = embeddingRecordRepository.findAllByMd5(docNameMD5Map);
 
-        //3.解析为已写入文件名MD5-文档记录 Map，返回
+        //3.解析为已写入文档名MD5-文档记录 Map，返回
         return existDocsRecord.stream()
                 .collect(Collectors.toMap(
                         EmbeddingRecordEntity::getFileNameMd5,
@@ -173,12 +172,13 @@ public class AIEmbeddingServiceImpl implements AIEmbeddingService {
      * 将新增文档写入向量数据库，并保存文档记录
      *
      * @param newDocsMap 新文档
+     * @return 新增文件列表
      */
-    private void addNewDocs(Map<String, Document> newDocsMap) {
+    private List<String> addNewDocs(Map<String, Document> newDocsMap) {
 
         //1.为空直接返回
         if (CollUtil.isEmpty(newDocsMap)) {
-            return;
+            return new ArrayList<>();
         }
 
         //2.转换为EmbeddingRecordEntity
@@ -191,6 +191,11 @@ public class AIEmbeddingServiceImpl implements AIEmbeddingService {
 
         //4.将新文档写入向量数据库
         ingestor.ingest(newDocsMap.values().stream().toList());
+
+        //5.解析出新增文件列表，返回
+        return newRecords.stream()
+                .map(newRecord -> newRecord.getFilePath() + "\\" + newRecord.getFileName())
+                .toList();
     }
 
     /**
@@ -199,12 +204,13 @@ public class AIEmbeddingServiceImpl implements AIEmbeddingService {
      * @param updateDocsNameSet  文档内容发生更新的文档名称MD5 Set
      * @param existDocsMap       已存在文档Map
      * @param existDocRecordsMap 已存在文档记录Map
+     * @return 更新文件列表
      */
-    private void updateChangeDocs(Set<String> updateDocsNameSet, Map<String, Document> existDocsMap, Map<String, EmbeddingRecordEntity> existDocRecordsMap) {
+    private List<String> updateChangeDocs(Set<String> updateDocsNameSet, Map<String, Document> existDocsMap, Map<String, EmbeddingRecordEntity> existDocRecordsMap) {
 
         //1.为空直接返回
         if (CollUtil.isEmpty(updateDocsNameSet)) {
-            return;
+            return new ArrayList<>();
         }
 
         //2.过滤出文档内容发生更新的文档记录
@@ -230,5 +236,10 @@ public class AIEmbeddingServiceImpl implements AIEmbeddingService {
 
         //6.将更新后的文档写入向量数据库
         ingestor.ingest(updateDocs);
+
+        //7.解析出更新文件列表，返回
+        return updateDocRecords.stream()
+                .map(newRecord -> newRecord.getFilePath() + "\\" + newRecord.getFileName())
+                .toList();
     }
 }
