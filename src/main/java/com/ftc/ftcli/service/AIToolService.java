@@ -33,4 +33,11 @@ public interface AIToolService {
      * @return 是否删除成功
      */
     boolean removeTool(String name);
+
+    /**
+     * 更新工具
+     *
+     * @param entity 工具实体
+     */
+    void updateTool(ToolSpecEntity entity);
 }

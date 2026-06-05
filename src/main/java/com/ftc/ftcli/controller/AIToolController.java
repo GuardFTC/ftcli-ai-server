@@ -66,4 +66,19 @@ public class AIToolController {
         //3.返回
         return RestfulResult.Success.removeData();
     }
+
+    @PutMapping
+    @Operation(summary = "更新工具")
+    public RestfulResult<Void> updateTool(@RequestBody ToolSpecEntity toolSpec) {
+
+        //1.打印日志
+        log.info("[AI] 更新工具 入参:[{}]", toolSpec);
+
+        //2.更新工具
+        aiToolService.updateTool(toolSpec);
+        log.info("[AI] 更新工具完成");
+
+        //3.返回
+        return RestfulResult.Success.getOrUpdateData(null);
+    }
 }

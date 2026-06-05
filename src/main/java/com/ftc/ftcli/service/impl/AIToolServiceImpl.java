@@ -42,4 +42,19 @@ public class AIToolServiceImpl implements AIToolService {
     public boolean removeTool(String name) {
         return toolSpecRepository.deleteByName(name);
     }
+
+    @Override
+    public void updateTool(ToolSpecEntity entity) {
+
+        //1.校验工具是否存在
+        if (!toolSpecRepository.existsByName(entity.getName())) {
+            throw new IllegalArgumentException("工具不存在: " + entity.getName());
+        }
+
+        //2.先删除旧工具
+        toolSpecRepository.deleteByName(entity.getName());
+
+        //3.再新增工具
+        toolSpecRepository.save(entity);
+    }
 }

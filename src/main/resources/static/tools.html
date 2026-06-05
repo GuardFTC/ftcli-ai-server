@@ -52,6 +52,19 @@
         .badge-type { background: #e6f7ff; color: #1890ff; }
         .btn-delete { background: none; border: 1px solid #ff4d4f; color: #ff4d4f; padding: 4px 12px; border-radius: 4px; cursor: pointer; font-size: 12px; margin-top: 12px; }
         .btn-delete:hover { background: #ff4d4f; color: #fff; }
+        .btn-edit { background: none; border: 1px solid #1890ff; color: #1890ff; padding: 4px 12px; border-radius: 4px; cursor: pointer; font-size: 12px; margin-top: 12px; margin-left: 8px; }
+        .btn-edit:hover { background: #1890ff; color: #fff; }
+
+        /* 编辑弹窗 */
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.4); z-index: 999; justify-content: center; align-items: center; }
+        .modal-overlay.active { display: flex; }
+        .modal { background: #fff; border-radius: 8px; padding: 24px; width: 780px; max-height: 80vh; overflow-y: auto; box-shadow: 0 8px 24px rgba(0,0,0,0.2); }
+        .modal h2 { font-size: 18px; margin-bottom: 20px; }
+        .modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
+        .btn-cancel { background: #fff; border: 1px solid #d9d9d9; color: #666; padding: 8px 20px; border-radius: 4px; cursor: pointer; font-size: 14px; }
+        .btn-cancel:hover { border-color: #999; }
+        .btn-save { background: #1890ff; color: #fff; border: none; padding: 8px 20px; border-radius: 4px; cursor: pointer; font-size: 14px; }
+        .btn-save:hover { background: #40a9ff; }
 
         /* 空状态 */
         .empty { padding: 40px 20px; text-align: center; color: #999; }
@@ -144,6 +157,34 @@
 
 <div class="toast" id="toast"></div>
 
+<!-- 编辑弹窗 -->
+<div class="modal-overlay" id="editModal">
+    <div class="modal">
+        <h2>编辑工具</h2>
+        <div class="form-row">
+            <label>工具名称（不可修改）</label>
+            <input type="text" id="editToolName" readonly style="background:#f5f5f5;">
+        </div>
+        <div class="form-row">
+            <label>工具描述</label>
+            <input type="text" id="editToolDesc">
+        </div>
+        <div class="form-row">
+            <label>工具类型</label>
+            <input type="text" id="editToolType">
+        </div>
+        <div class="params-section">
+            <h3>参数列表</h3>
+            <div id="editParamsList"></div>
+            <button class="btn-add-param" onclick="addEditParam()">+ 添加参数</button>
+        </div>
+        <div class="modal-actions">
+            <button class="btn-cancel" onclick="closeEditModal()">取消</button>
+            <button class="btn-save" onclick="saveEditTool()">保存</button>
+        </div>
+    </div>
+</div>
+
 <script>
 const API_BASE = '/api/rest/v1/ai/tools';
 
@@ -161,7 +202,8 @@ async function loadTools() {
     try {
         const resp = await fetch(API_BASE);
         const result = await resp.json();
-        renderTools(result.data || []);
+        allTools = result.data || [];
+        renderTools(allTools);
     } catch (e) {
         showToast('加载工具列表失败: ' + e.message, 'error');
     }
@@ -238,6 +280,7 @@ function renderToolCard(tool) {
             <div class="tool-detail">
                 ${paramsHtml}
                 <button class="btn-delete" onclick="event.stopPropagation(); deleteTool('${tool.name}')">删除此工具</button>
+                <button class="btn-edit" onclick="event.stopPropagation(); editTool('${tool.name}')">编辑</button>
             </div>
         </div>
     `;
@@ -363,6 +406,120 @@ function showToast(msg, type) {
     toast.className = 'toast toast-' + type;
     toast.style.display = 'block';
     setTimeout(() => { toast.style.display = 'none'; }, 3000);
+}
+
+// 全局缓存工具数据
+let allTools = [];
+
+// 编辑工具
+function editTool(name) {
+    const tool = allTools.find(t => t.name === name);
+    if (!tool) return;
+
+    document.getElementById('editToolName').value = tool.name;
+    document.getElementById('editToolDesc').value = tool.description;
+    document.getElementById('editToolType').value = tool.type;
+
+    // 填充参数
+    const list = document.getElementById('editParamsList');
+    list.innerHTML = '';
+    if (tool.params) {
+        tool.params.forEach(p => {
+            addEditParam(p);
+        });
+    }
+
+    document.getElementById('editModal').classList.add('active');
+}
+
+// 关闭编辑弹窗
+function closeEditModal() {
+    document.getElementById('editModal').classList.remove('active');
+}
+
+// 添加编辑参数行
+function addEditParam(param) {
+    const list = document.getElementById('editParamsList');
+    const div = document.createElement('div');
+    div.className = 'param-item';
+    const pName = param ? param.name : '';
+    const pDesc = param ? param.description : '';
+    const pType = param ? param.type : 'STRING';
+    const pRequired = param ? param.required : false;
+    const pEnums = param && param.enumValues ? param.enumValues.join(',') : '';
+
+    div.innerHTML = `
+        <input type="text" placeholder="参数名" class="param-name" value="${pName}">
+        <input type="text" placeholder="描述" class="param-desc" value="${pDesc}">
+        <select class="param-type">
+            <option value="STRING" ${pType === 'STRING' ? 'selected' : ''}>STRING</option>
+            <option value="INTEGER" ${pType === 'INTEGER' ? 'selected' : ''}>INTEGER</option>
+            <option value="NUMBER" ${pType === 'NUMBER' ? 'selected' : ''}>NUMBER</option>
+            <option value="BOOLEAN" ${pType === 'BOOLEAN' ? 'selected' : ''}>BOOLEAN</option>
+            <option value="ENUMS" ${pType === 'ENUMS' ? 'selected' : ''}>ENUMS</option>
+        </select>
+        <label class="param-required-label">
+            <input type="checkbox" class="param-required" ${pRequired ? 'checked' : ''}> 必填
+        </label>
+        <input type="text" placeholder="枚举值(逗号分隔)" class="param-enums" value="${pEnums}" style="display:${pType === 'ENUMS' ? 'block' : 'none'};">
+        <button class="btn-remove-param" onclick="this.parentElement.remove()">×</button>
+    `;
+    const typeSelect = div.querySelector('.param-type');
+    const enumInput = div.querySelector('.param-enums');
+    typeSelect.addEventListener('change', () => {
+        enumInput.style.display = typeSelect.value === 'ENUMS' ? 'block' : 'none';
+    });
+    list.appendChild(div);
+}
+
+// 保存编辑
+async function saveEditTool() {
+    const name = document.getElementById('editToolName').value.trim();
+    const description = document.getElementById('editToolDesc').value.trim();
+    const type = document.getElementById('editToolType').value.trim();
+
+    if (!description || !type) {
+        showToast('请填写完整工具信息', 'error');
+        return;
+    }
+
+    const paramItems = document.querySelectorAll('#editParamsList .param-item');
+    const params = [];
+    for (const item of paramItems) {
+        const pName = item.querySelector('.param-name').value.trim();
+        const pDesc = item.querySelector('.param-desc').value.trim();
+        const pType = item.querySelector('.param-type').value;
+        const pRequired = item.querySelector('.param-required').checked;
+        const pEnums = item.querySelector('.param-enums').value.trim();
+
+        if (!pName || !pDesc) continue;
+
+        const param = { name: pName, description: pDesc, type: pType, required: pRequired };
+        if (pType === 'ENUMS' && pEnums) {
+            param.enumValues = pEnums.split(',').map(s => s.trim());
+        }
+        params.push(param);
+    }
+
+    const payload = { name, description, type, params: params.length > 0 ? params : null };
+
+    try {
+        const resp = await fetch(API_BASE, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        const result = await resp.json();
+        if (resp.ok) {
+            showToast('更新成功', 'success');
+            closeEditModal();
+            loadTools();
+        } else {
+            showToast('更新失败: ' + result.message, 'error');
+        }
+    } catch (e) {
+        showToast('更新失败: ' + e.message, 'error');
+    }
 }
 
 // 初始化
