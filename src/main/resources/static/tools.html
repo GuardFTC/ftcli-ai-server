@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 工具管理</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f7fa; padding: 24px; color: #333; }
+        h1 { font-size: 24px; margin-bottom: 24px; color: #1a1a1a; }
+        .container { max-width: 960px; margin: 0 auto; }
+
+        /* 工具列表 */
+        .tool-list { background: #fff; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-bottom: 24px; }
+        .tool-list-header { padding: 16px 20px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
+        .tool-list-header h2 { font-size: 16px; color: #666; }
+        .tool-list-empty { padding: 40px 20px; text-align: center; color: #999; }
+        .tool-item { padding: 16px 20px; border-bottom: 1px solid #f0f0f0; display: flex; justify-content: space-between; align-items: center; }
+        .tool-item:last-child { border-bottom: none; }
+        .tool-info { flex: 1; }
+        .tool-name { font-weight: 600; font-size: 15px; color: #1a1a1a; }
+        .tool-desc { font-size: 13px; color: #666; margin-top: 4px; }
+        .tool-type { display: inline-block; font-size: 11px; background: #e8f4fd; color: #1890ff; padding: 2px 8px; border-radius: 4px; margin-top: 6px; }
+        .tool-params { font-size: 12px; color: #999; margin-top: 4px; }
+        .btn-delete { background: #ff4d4f; color: #fff; border: none; padding: 6px 14px; border-radius: 4px; cursor: pointer; font-size: 13px; }
+        .btn-delete:hover { background: #ff7875; }
+
+        /* 新增表单 */
+        .add-form { background: #fff; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); padding: 20px; }
+        .add-form h2 { font-size: 16px; color: #666; margin-bottom: 16px; }
+        .form-row { margin-bottom: 14px; }
+        .form-row label { display: block; font-size: 13px; color: #666; margin-bottom: 4px; }
+        .form-row input, .form-row select, .form-row textarea { width: 100%; padding: 8px 12px; border: 1px solid #d9d9d9; border-radius: 4px; font-size: 14px; }
+        .form-row textarea { height: 80px; resize: vertical; }
+        .params-section { background: #fafafa; padding: 12px; border-radius: 4px; margin-top: 8px; }
+        .params-section h3 { font-size: 13px; color: #666; margin-bottom: 8px; }
+        .param-item { display: flex; gap: 8px; margin-bottom: 8px; align-items: center; }
+        .param-item input, .param-item select { flex: 1; padding: 6px 8px; border: 1px solid #d9d9d9; border-radius: 4px; font-size: 13px; }
+        .param-item .btn-remove-param { background: #f5f5f5; border: 1px solid #d9d9d9; padding: 4px 8px; border-radius: 4px; cursor: pointer; color: #999; }
+        .btn-add-param { background: #fafafa; border: 1px dashed #d9d9d9; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 13px; color: #666; margin-top: 4px; }
+        .btn-add-param:hover { border-color: #1890ff; color: #1890ff; }
+        .btn-submit { background: #1890ff; color: #fff; border: none; padding: 10px 24px; border-radius: 4px; cursor: pointer; font-size: 14px; margin-top: 8px; }
+        .btn-submit:hover { background: #40a9ff; }
+
+        .toast { position: fixed; top: 20px; right: 20px; padding: 12px 20px; border-radius: 4px; color: #fff; font-size: 14px; display: none; z-index: 1000; }
+        .toast-success { background: #52c41a; }
+        .toast-error { background: #ff4d4f; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>AI 工具管理</h1>
+
+    <!-- 工具列表 -->
+    <div class="tool-list">
+        <div class="tool-list-header">
+            <h2>已注册工具</h2>
+            <span id="toolCount">0 个</span>
+        </div>
+        <div id="toolListBody">
+            <div class="tool-list-empty">加载中...</div>
+        </div>
+    </div>
+
+    <!-- 新增工具 -->
+    <div class="add-form">
+        <h2>新增工具</h2>
+        <div class="form-row">
+            <label>工具名称</label>
+            <input type="text" id="toolName" placeholder="如: getWeather">
+        </div>
+        <div class="form-row">
+            <label>工具描述</label>
+            <input type="text" id="toolDesc" placeholder="如: 获取指定城市的天气信息">
+        </div>
+        <div class="form-row">
+            <label>工具类型</label>
+            <input type="text" id="toolType" placeholder="如: weather">
+        </div>
+        <div class="params-section">
+            <h3>参数列表</h3>
+            <div id="paramsList"></div>
+            <button class="btn-add-param" onclick="addParam()">+ 添加参数</button>
+        </div>
+        <button class="btn-submit" onclick="submitTool()">新增工具</button>
+    </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const API_BASE = '/api/rest/v1/ai/tools';
+
+// 加载工具列表
+async function loadTools() {
+    try {
+        const resp = await fetch(API_BASE);
+        const result = await resp.json();
+        renderTools(result.data || []);
+    } catch (e) {
+        showToast('加载工具列表失败: ' + e.message, 'error');
+    }
+}
+
+// 渲染工具列表
+function renderTools(tools) {
+    const body = document.getElementById('toolListBody');
+    document.getElementById('toolCount').textContent = tools.length + ' 个';
+
+    if (tools.length === 0) {
+        body.innerHTML = '<div class="tool-list-empty">暂无已注册工具</div>';
+        return;
+    }
+
+    body.innerHTML = tools.map(tool => `
+        <div class="tool-item">
+            <div class="tool-info">
+                <div class="tool-name">${tool.name}</div>
+                <div class="tool-desc">${tool.description}</div>
+                <span class="tool-type">${tool.type}</span>
+                ${tool.params && tool.params.length > 0 ? `<div class="tool-params">参数: ${tool.params.map(p => p.name + '(' + p.type.toLowerCase() + (p.required ? ',必填' : '') + ')').join(', ')}</div>` : ''}
+            </div>
+            <button class="btn-delete" onclick="deleteTool('${tool.name}')">删除</button>
+        </div>
+    `).join('');
+}
+
+// 删除工具
+async function deleteTool(name) {
+    if (!confirm('确认删除工具「' + name + '」？')) return;
+    try {
+        const resp = await fetch(API_BASE + '/' + name, { method: 'DELETE' });
+        if (resp.ok) {
+            showToast('删除成功', 'success');
+            loadTools();
+        } else {
+            showToast('删除失败', 'error');
+        }
+    } catch (e) {
+        showToast('删除失败: ' + e.message, 'error');
+    }
+}
+
+// 添加参数行
+function addParam() {
+    const list = document.getElementById('paramsList');
+    const div = document.createElement('div');
+    div.className = 'param-item';
+    div.innerHTML = `
+        <input type="text" placeholder="参数名" class="param-name">
+        <input type="text" placeholder="描述" class="param-desc">
+        <select class="param-type">
+            <option value="STRING">STRING</option>
+            <option value="INTEGER">INTEGER</option>
+            <option value="NUMBER">NUMBER</option>
+            <option value="BOOLEAN">BOOLEAN</option>
+            <option value="ENUMS">ENUMS</option>
+        </select>
+        <label style="font-size:12px;white-space:nowrap;display:flex;align-items:center;gap:2px;">
+            <input type="checkbox" class="param-required"> 必填
+        </label>
+        <input type="text" placeholder="枚举值(逗号分隔)" class="param-enums" style="display:none;">
+        <button class="btn-remove-param" onclick="this.parentElement.remove()">×</button>
+    `;
+    // 监听类型变化，显示/隐藏枚举输入
+    const typeSelect = div.querySelector('.param-type');
+    const enumInput = div.querySelector('.param-enums');
+    typeSelect.addEventListener('change', () => {
+        enumInput.style.display = typeSelect.value === 'ENUMS' ? 'block' : 'none';
+    });
+    list.appendChild(div);
+}
+
+// 提交新增工具
+async function submitTool() {
+    const name = document.getElementById('toolName').value.trim();
+    const description = document.getElementById('toolDesc').value.trim();
+    const type = document.getElementById('toolType').value.trim();
+
+    if (!name || !description || !type) {
+        showToast('请填写完整工具信息', 'error');
+        return;
+    }
+
+    // 收集参数
+    const paramItems = document.querySelectorAll('.param-item');
+    const params = [];
+    for (const item of paramItems) {
+        const pName = item.querySelector('.param-name').value.trim();
+        const pDesc = item.querySelector('.param-desc').value.trim();
+        const pType = item.querySelector('.param-type').value;
+        const pRequired = item.querySelector('.param-required').checked;
+        const pEnums = item.querySelector('.param-enums').value.trim();
+
+        if (!pName || !pDesc) continue;
+
+        const param = { name: pName, description: pDesc, type: pType, required: pRequired };
+        if (pType === 'ENUMS' && pEnums) {
+            param.enumValues = pEnums.split(',').map(s => s.trim());
+        }
+        params.push(param);
+    }
+
+    const payload = { name, description, type, params: params.length > 0 ? params : null };
+
+    try {
+        const resp = await fetch(API_BASE, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        const result = await resp.json();
+        if (resp.ok) {
+            showToast('新增成功, ID: ' + result.data, 'success');
+            document.getElementById('toolName').value = '';
+            document.getElementById('toolDesc').value = '';
+            document.getElementById('toolType').value = '';
+            document.getElementById('paramsList').innerHTML = '';
+            loadTools();
+        } else {
+            showToast('新增失败: ' + result.message, 'error');
+        }
+    } catch (e) {
+        showToast('新增失败: ' + e.message, 'error');
+    }
+}
+
+// 提示
+function showToast(msg, type) {
+    const toast = document.getElementById('toast');
+    toast.textContent = msg;
+    toast.className = 'toast toast-' + type;
+    toast.style.display = 'block';
+    setTimeout(() => { toast.style.display = 'none'; }, 3000);
+}
+
+// 初始化
+loadTools();
+</script>
+</body>
+</html>
