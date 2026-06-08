@@ -114,6 +114,20 @@
             <version>${langchain4j.version}</version>
         </dependency>
 
+        <!-- langchain4j PDF文档解析器依赖 -->
+        <dependency>
+            <groupId>dev.langchain4j</groupId>
+            <artifactId>langchain4j-document-parser-apache-pdfbox</artifactId>
+            <version>${langchain4j.version}</version>
+        </dependency>
+
+        <!-- langchain4j YAML文档解析器依赖 -->
+        <dependency>
+            <groupId>dev.langchain4j</groupId>
+            <artifactId>langchain4j-document-parser-yaml</artifactId>
+            <version>${langchain4j.version}</version>
+        </dependency>
+
         <!-- springdoc-openapi-ui依赖 -->
         <dependency>
             <groupId>org.springdoc</groupId>

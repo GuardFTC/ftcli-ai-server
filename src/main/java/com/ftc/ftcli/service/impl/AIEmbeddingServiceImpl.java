@@ -1,6 +1,8 @@
 package com.ftc.ftcli.service.impl;
 
 import cn.hutool.core.collection.CollUtil;
+import cn.hutool.core.io.FileUtil;
+import com.ftc.ftcli.common.embedding.doc_parser.DocParserFactory;
 import com.ftc.ftcli.common.util.DocUtil;
 import com.ftc.ftcli.entity.embedding.EmbeddingFileUploadPayload;
 import com.ftc.ftcli.entity.embedding.EmbeddingFileUploadResult;
@@ -8,12 +10,11 @@ import com.ftc.ftcli.entity.embedding.EmbeddingRecordEntity;
 import com.ftc.ftcli.infra.sqlite.EmbeddingRecordRepository;
 import com.ftc.ftcli.service.AIEmbeddingService;
 import dev.langchain4j.data.document.Document;
+import dev.langchain4j.data.document.DocumentParser;
 import dev.langchain4j.data.document.loader.FileSystemDocumentLoader;
-import dev.langchain4j.data.document.parser.markdown.MarkdownDocumentParser;
 import dev.langchain4j.data.segment.TextSegment;
 import dev.langchain4j.store.embedding.EmbeddingStore;
 import dev.langchain4j.store.embedding.EmbeddingStoreIngestor;
-import dev.langchain4j.store.embedding.filter.Filter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -21,13 +22,11 @@ import org.springframework.stereotype.Service;
 import java.io.File;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-
-import static dev.langchain4j.data.document.loader.FileSystemDocumentLoader.loadDocumentsRecursively;
-import static dev.langchain4j.store.embedding.filter.MetadataFilterBuilder.metadataKey;
 
 /**
  * @author 冯铁城 [17615007230@163.com]
@@ -100,19 +99,19 @@ public class AIEmbeddingServiceImpl implements AIEmbeddingService {
     @Override
     public void remove(Long id) {
 
-        //1.查询文档记录
-        EmbeddingRecordEntity docRecord = embeddingRecordRepository.findById(id);
-        if (null == docRecord) {
-            log.error("[AI] 删除文档 文档不存在:[{}]", id);
-            return;
-        }
-
-        //2.删除向量数据库向量
-        Filter filter = metadataKey("file_name_md5").isEqualTo(docRecord.getFileNameMd5());
-        embeddingStore.removeAll(filter);
-
-        //3.删除文档记录
-        embeddingRecordRepository.deleteById(id);
+//        //1.查询文档记录
+//        EmbeddingRecordEntity docRecord = embeddingRecordRepository.findById(id);
+//        if (null == docRecord) {
+//            log.error("[AI] 删除文档 文档不存在:[{}]", id);
+//            return;
+//        }
+//
+//        //2.删除向量数据库向量
+//        Filter filter = metadataKey("file_name_md5").isEqualTo(docRecord.getFileNameMd5());
+//        embeddingStore.removeAll(filter);
+//
+//        //3.删除文档记录
+//        embeddingRecordRepository.deleteById(id);
     }
 
     /**
@@ -132,17 +131,32 @@ public class AIEmbeddingServiceImpl implements AIEmbeddingService {
             return Map.of();
         }
 
-        //3.判定文档是目录还是文档
-        //如果是目录,递归获取目录下全部文档
-        //如果是文档,则直接获取文档
-        List<Document> documents;
+        //3.获取待加载的文件列表
+        List<File> files;
         if (uploadFile.isDirectory()) {
-            documents = loadDocumentsRecursively(path, new MarkdownDocumentParser());
+            files = FileUtil.loopFiles(uploadFile);
         } else {
-            documents = List.of(FileSystemDocumentLoader.loadDocument(path, new MarkdownDocumentParser()));
+            files = List.of(uploadFile);
         }
 
-        //4.解析为文档名MD5-文档Map，返回
+        //4.逐个文件按扩展名选择解析器加载
+        List<Document> documents = new ArrayList<>();
+        for (File file : files) {
+
+            //5.获取文件扩展名
+            String ext = FileUtil.extName(file);
+
+            //6.根据扩展名获取解析器
+            DocumentParser parser = DocParserFactory.getDocParser(ext);
+
+            //7.加载文档
+            Document doc = FileSystemDocumentLoader.loadDocument(file.toPath(), parser);
+
+            //8.添加文档
+            documents.add(doc);
+        }
+
+        //9.解析为文档名MD5-文档Map，返回
         return documents.stream().collect(Collectors.toMap(
                 DocUtil::getFileNameMD5AndSetDocMetaData,
                 doc -> doc,
@@ -215,18 +229,18 @@ public class AIEmbeddingServiceImpl implements AIEmbeddingService {
                 .map(EmbeddingRecordEntity::getFullPath)
                 .toList();
 
-        //4.写入向量数据库前，先按file_name_md5清理可能残留的旧向量（保证ingest幂等，防止重试产生重复向量），再写入新向量
-        try {
-            Filter filter = metadataKey("file_name_md5").isIn(newDocsMap.keySet());
-            embeddingStore.removeAll(filter);
-            ingestor.ingest(newDocsMap.values().stream().toList());
-        } catch (Exception e) {
-            log.error("[AI] 新增文档 向量写入失败，本次不写入文档记录，可重新上传重试。文件:[{}]", newFiles, e);
-            throw e;
-        }
-
-        //5.向量写入成功后，最后写入文档记录（SQLite作为唯一事实源，失败可靠下次上传自愈）
-        embeddingRecordRepository.saveBatch(newRecords);
+//        //4.写入向量数据库前，先按file_name_md5清理可能残留的旧向量（保证ingest幂等，防止重试产生重复向量），再写入新向量
+//        try {
+//            Filter filter = metadataKey("file_name_md5").isIn(newDocsMap.keySet());
+//            embeddingStore.removeAll(filter);
+//            ingestor.ingest(newDocsMap.values().stream().toList());
+//        } catch (Exception e) {
+//            log.error("[AI] 新增文档 向量写入失败，本次不写入文档记录，可重新上传重试。文件:[{}]", newFiles, e);
+//            throw e;
+//        }
+//
+//        //5.向量写入成功后，最后写入文档记录（SQLite作为唯一事实源，失败可靠下次上传自愈）
+//        embeddingRecordRepository.saveBatch(newRecords);
 
         //6.解析出新增文件列表，返回
         return newFiles;
@@ -264,18 +278,18 @@ public class AIEmbeddingServiceImpl implements AIEmbeddingService {
                 .map(EmbeddingRecordEntity::getFullPath)
                 .toList();
 
-        //5.先按file_name_md5批量删除旧向量，再写入更新后的向量
-        try {
-            Filter filter = metadataKey("file_name_md5").isIn(updateDocsNameSet);
-            embeddingStore.removeAll(filter);
-            ingestor.ingest(updateDocs);
-        } catch (Exception e) {
-            log.error("[AI] 新增文档 向量更新失败，本次不更新文档记录，可重新上传重试。文件:[{}]", updateFiles, e);
-            throw e;
-        }
-
-        //6.向量更新成功后，最后更新文档记录（SQLite作为唯一事实源，失败可靠下次上传自愈）
-        embeddingRecordRepository.updateBatch(updateDocRecords);
+//        //5.先按file_name_md5批量删除旧向量，再写入更新后的向量
+//        try {
+//            Filter filter = metadataKey("file_name_md5").isIn(updateDocsNameSet);
+//            embeddingStore.removeAll(filter);
+//            ingestor.ingest(updateDocs);
+//        } catch (Exception e) {
+//            log.error("[AI] 新增文档 向量更新失败，本次不更新文档记录，可重新上传重试。文件:[{}]", updateFiles, e);
+//            throw e;
+//        }
+//
+//        //6.向量更新成功后，最后更新文档记录（SQLite作为唯一事实源，失败可靠下次上传自愈）
+//        embeddingRecordRepository.updateBatch(updateDocRecords);
 
         //7.解析出更新文件列表，返回
         return updateFiles;
