@@ -58,7 +58,7 @@ public class UrlDocLoader implements IDocLoader {
             DocumentParser parser = DocParserFactory.getDocParser(fileType);
 
             //7.加载文档
-            Document doc = UrlDocumentLoader.load(url, parser);
+            Document doc = UrlDocumentLoader.load(decodedUrl, parser);
 
             //8.生成MD5
             String fileNameMD5 = DigestUtil.md5Hex(decodedUrl);
