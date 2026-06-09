@@ -1,4 +1,4 @@
-package com.ftc.ftcli.common.embedding.doc_parser;
+package com.ftc.ftcli.common.util.doc_parser;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;

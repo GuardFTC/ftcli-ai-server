@@ -1,4 +1,4 @@
-package com.ftc.ftcli.common.embedding.doc_parser;
+package com.ftc.ftcli.common.util.doc_parser;
 
 import dev.langchain4j.data.document.DocumentParser;
 import dev.langchain4j.data.document.parser.TextDocumentParser;

@@ -2,7 +2,7 @@ package com.ftc.ftcli.service.impl;
 
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.io.FileUtil;
-import com.ftc.ftcli.common.embedding.doc_parser.DocParserFactory;
+import com.ftc.ftcli.common.util.doc_parser.DocParserFactory;
 import com.ftc.ftcli.common.util.doc.DocUtil;
 import com.ftc.ftcli.entity.embedding.EmbeddingFileUploadPayload;
 import com.ftc.ftcli.entity.embedding.EmbeddingFileUploadResult;
