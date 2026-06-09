@@ -52,7 +52,7 @@ public enum DocParserTypeEnum {
      * 根据类型字符串获取枚举
      *
      * @param type 类型字符串
-     * @return 枚举，未匹配返回DEFAULT
+     * @return 枚举，未匹配返回UNKNOWN
      */
     public static DocParserTypeEnum fromType(String type) {
 
