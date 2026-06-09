@@ -1,7 +1,7 @@
 package com.ftc.ftcli;
 
 import cn.hutool.core.io.FileUtil;
-import com.ftc.ftcli.common.embedding.doc_parser.DocParserFactory;
+import com.ftc.ftcli.common.util.doc.doc_parser.DocParserFactory;
 import com.ftc.ftcli.common.util.github.GitHubUrlInfo;
 import com.ftc.ftcli.common.util.github.GitHubUrlParser;
 import dev.langchain4j.data.document.Document;

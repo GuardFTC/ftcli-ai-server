@@ -78,6 +78,8 @@ ai:
         tenant: langchain4j
         database: langchain4j_db
         collection: langchain4j_coll
+    github:
+      token: xxx
   rag:
     ingestor:
       max-segment-size: 1500

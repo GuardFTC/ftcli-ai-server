@@ -1,8 +1,10 @@
 package com.ftc.ftcli.config.ai;
 
+import com.ftc.ftcli.properties.embedding.EmbeddingGithubProperties;
 import com.ftc.ftcli.properties.embedding.EmbeddingModelProperties;
 import com.ftc.ftcli.properties.embedding.EmbeddingStoreProperties;
 import dev.langchain4j.community.model.zhipu.ZhipuAiEmbeddingModel;
+import dev.langchain4j.data.document.loader.github.GitHubDocumentLoader;
 import dev.langchain4j.data.segment.TextSegment;
 import dev.langchain4j.model.embedding.EmbeddingModel;
 import dev.langchain4j.store.embedding.EmbeddingStore;
@@ -22,12 +24,14 @@ import org.springframework.context.annotation.Configuration;
 @Slf4j
 @Configuration
 @RequiredArgsConstructor
-@EnableConfigurationProperties({EmbeddingModelProperties.class, EmbeddingStoreProperties.class})
+@EnableConfigurationProperties({EmbeddingModelProperties.class, EmbeddingStoreProperties.class, EmbeddingGithubProperties.class})
 public class EmbeddingConfig {
 
     private final EmbeddingModelProperties modelProperties;
 
     private final EmbeddingStoreProperties storeProperties;
+
+    private final EmbeddingGithubProperties githubProperties;
 
     @Bean
     public EmbeddingModel embeddingModel() {
@@ -47,6 +51,13 @@ public class EmbeddingConfig {
                 .collectionName(storeProperties.getCollection())
                 .logRequests(false)
                 .logResponses(false)
+                .build();
+    }
+
+    @Bean
+    public GitHubDocumentLoader githubDocumentLoader() {
+        return GitHubDocumentLoader.builder()
+                .gitHubToken(githubProperties.getToken())
                 .build();
     }
 }
