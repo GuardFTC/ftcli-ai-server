@@ -6,7 +6,7 @@ import cn.hutool.core.util.StrUtil;
 import cn.hutool.crypto.digest.DigestUtil;
 import com.ftc.ftcli.common.enums.doc.DocLoaderEnum;
 import com.ftc.ftcli.common.enums.doc.DocMetaDataKeyEnum;
-import com.ftc.ftcli.common.enums.doc.DocTypeEnum;
+import com.ftc.ftcli.common.enums.doc.DocParserTypeEnum;
 import com.ftc.ftcli.common.util.doc.doc_loader.IDocLoader;
 import com.ftc.ftcli.common.util.doc.doc_parser.DocParserFactory;
 import dev.langchain4j.data.document.Document;
@@ -39,30 +39,30 @@ public class UrlDocLoader implements IDocLoader {
             //1.进行解码
             String decodedUrl = URLDecoder.decode(url, StandardCharsets.UTF_8);
 
-            //2.获取文件名
+            //2.定义原解码URL
+            String originalDecodedUrl = decodedUrl;
+
+            //3.获取文件名
             String fileName = FileUtil.getName(decodedUrl);
 
-            //3.获取文件类型
+            //4.获取文件类型
             String fileType = FileUtil.extName(fileName);
 
-            //4.如果文件类型为空,设置为默认类型
+            //5.如果文件类型为空,设置为默认类型
             if (StrUtil.isBlank(fileType)) {
 
-                //5.设置文件类型为默认类型,文件名拼接类型，url拼接类型
-                fileType = DocTypeEnum.DEFAULT.getType();
+                //6.设置文件类型为默认类型,文件名拼接类型，url拼接类型
+                fileType = DocParserTypeEnum.TXT.getType();
                 fileName = fileName + StrUtil.DOT + fileType;
                 decodedUrl = decodedUrl + StrUtil.DOT + fileType;
             }
 
-            //6.根据文件类型获取解析器
+            //7.根据文件类型获取解析器
             DocumentParser parser = DocParserFactory.getDocParser(fileType);
             if (null == parser) {
                 log.error("[URL文档加载器] 文档解析器不存在:[{}] [{}]", decodedUrl, fileType);
                 return Map.of();
             }
-
-            //7.定义原解码URL
-            String originalDecodedUrl = URLDecoder.decode(url, StandardCharsets.UTF_8);
 
             //8.加载文档
             Document doc = UrlDocumentLoader.load(originalDecodedUrl, parser);

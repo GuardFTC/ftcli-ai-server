@@ -6,11 +6,11 @@ import lombok.Getter;
 /**
  * @author 冯铁城 [17615007230@163.com]
  * @date 2026-06-08 20:22:35
- * @describe 文档类型枚举
+ * @describe 文档解析器类型枚举
  */
 @Getter
 @AllArgsConstructor
-public enum DocTypeEnum {
+public enum DocParserTypeEnum {
 
     /**
      * markdown文档
@@ -35,7 +35,12 @@ public enum DocTypeEnum {
     /**
      * 默认类型文档文档
      */
-    DEFAULT("txt"),
+    TXT("txt"),
+
+    /**
+     * 未知类型文档文档
+     */
+    UNKNOWN("unknown"),
     ;
 
     /**
@@ -49,16 +54,16 @@ public enum DocTypeEnum {
      * @param type 类型字符串
      * @return 枚举，未匹配返回DEFAULT
      */
-    public static DocTypeEnum fromType(String type) {
+    public static DocParserTypeEnum fromType(String type) {
 
         //1.遍历枚举，如果匹配，返回
-        for (DocTypeEnum docTypeEnum : values()) {
-            if (docTypeEnum.getType().equalsIgnoreCase(type)) {
-                return docTypeEnum;
+        for (DocParserTypeEnum docParserTypeEnum : values()) {
+            if (docParserTypeEnum.getType().equalsIgnoreCase(type)) {
+                return docParserTypeEnum;
             }
         }
 
-        //2.未匹配返回DEFAULT
-        return DEFAULT;
+        //2.未匹配返回未知
+        return UNKNOWN;
     }
 }

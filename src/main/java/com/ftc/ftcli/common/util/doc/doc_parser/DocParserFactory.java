@@ -1,6 +1,6 @@
 package com.ftc.ftcli.common.util.doc.doc_parser;
 
-import com.ftc.ftcli.common.enums.doc.DocTypeEnum;
+import com.ftc.ftcli.common.enums.doc.DocParserTypeEnum;
 import dev.langchain4j.data.document.DocumentParser;
 import dev.langchain4j.data.document.parser.TextDocumentParser;
 import dev.langchain4j.data.document.parser.apache.pdfbox.ApachePdfBoxDocumentParser;
@@ -23,14 +23,14 @@ public class DocParserFactory {
     public static DocumentParser getDocParser(String type) {
 
         //1.获取文档类型
-        DocTypeEnum docTypeEnum = DocTypeEnum.fromType(type);
+        DocParserTypeEnum docParserTypeEnum = DocParserTypeEnum.fromType(type);
 
         //2.根据文档类型获取文档解析器
-        return switch (docTypeEnum) {
+        return switch (docParserTypeEnum) {
             case MARKDOWN -> new MarkdownDocumentParser();
             case PDF -> new ApachePdfBoxDocumentParser(true);
             case YAML, YML -> new YamlDocumentParser();
-            case DEFAULT -> new TextDocumentParser();
+            case TXT -> new TextDocumentParser();
             default -> null;
         };
     }
