@@ -1,5 +1,6 @@
 package com.ftc.ftcli.ai.tool.executor;
 
+import com.ftc.ftcli.common.util.ai.AiTraceLog;
 import dev.langchain4j.service.tool.ToolExecutor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeansException;
@@ -58,13 +59,21 @@ public class ToolExecutorFactory implements ApplicationContextAware {
 
             //4.包装为带追踪日志的执行器
             ToolExecutor tracedExecutor = (request, memoryId) -> {
-                log.info("[AI-Trace] 工具调用: name=[{}], args=[{}]", request.name(), request.arguments());
+
+                //5.打印调用参数
+                AiTraceLog.logToolCall(request.name(), request.arguments());
+
+                //6.执行工具
                 String result = executor.getToolExecutor().execute(request, memoryId);
-                log.info("[AI-Trace] 工具返回: name=[{}], result=[{}]", request.name(), result);
+
+                //7.打印返回结果
+                AiTraceLog.logToolResult(request.name(), result);
+
+                //8.返回结果
                 return result;
             };
 
-            //5.封装Map
+            //9.封装Map
             TOOL_EXECUTOR_MAP.put(executor.getName(), tracedExecutor);
         }
     }

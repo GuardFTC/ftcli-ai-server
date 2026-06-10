@@ -3,6 +3,7 @@ package com.ftc.ftcli.service.impl;
 import cn.hutool.core.util.IdUtil;
 import com.ftc.ftcli.ai.assistant.LocalAiService;
 import com.ftc.ftcli.ai.assistant.WebAiService;
+import com.ftc.ftcli.common.util.ai.AiTraceLog;
 import com.ftc.ftcli.entity.payload.ChatPayload;
 import com.ftc.ftcli.service.AiChatService;
 import dev.langchain4j.service.Result;
@@ -32,20 +33,41 @@ public class AIChatServiceImpl implements AiChatService {
 
     @Override
     public String chat(ChatPayload payload) {
+
+        //1.获取开始时间戳
+        long start = System.currentTimeMillis();
+
+        //2.基于是否为本地问答进行LLM链路调用
+        String result;
         if (payload.getIsLocal()) {
-            return chatByLocalAi(payload);
+            result = chatByLocalAi(payload);
         } else {
-            return chatByWebAi(payload);
+            result = chatByWebAi(payload);
         }
+
+        //3.打印总耗时
+        AiTraceLog.logTotalTime(start);
+
+        //4.返回结果
+        return result;
     }
 
     @Override
     public Flux<String> chatStream(ChatPayload payload) {
+
+        //1.获取开始时间戳
+        long start = System.currentTimeMillis();
+
+        //2.基于是否为本地问答进行LLM链路调用
+        Flux<String> flux;
         if (payload.getIsLocal()) {
-            return localAiService.chatStream(payload.getChatId(), payload.getUserMessage());
+            flux = localAiService.chatStream(payload.getChatId(), payload.getUserMessage());
         } else {
-            return webAiService.chatStream(payload.getChatId(), payload.getUserMessage());
+            flux = webAiService.chatStream(payload.getChatId(), payload.getUserMessage());
         }
+
+        //3.打印总耗时,并返回结果
+        return flux.doOnComplete(() -> AiTraceLog.logTotalTime(start));
     }
 
     /**
@@ -59,10 +81,7 @@ public class AIChatServiceImpl implements AiChatService {
         //1.进行聊天
         Result<String> aiResult = localAiService.chat(payload.getChatId(), payload.getUserMessage());
 
-        //2.打印相关日志，后续有需要的再补充
-        log.info("[AI] LocalAI Token使用情况:[{}]", aiResult.tokenUsage());
-
-        //3.返回
+        //2.返回
         return aiResult.content();
     }
 
@@ -77,10 +96,7 @@ public class AIChatServiceImpl implements AiChatService {
         //1.进行聊天
         Result<String> aiResult = webAiService.chat(payload.getChatId(), payload.getUserMessage());
 
-        //2.打印相关日志，后续有需要的再补充
-        log.info("[AI] WebAI Token使用情况:[{}]", aiResult.tokenUsage());
-
-        //3.返回
+        //2.返回
         return aiResult.content();
     }
 }

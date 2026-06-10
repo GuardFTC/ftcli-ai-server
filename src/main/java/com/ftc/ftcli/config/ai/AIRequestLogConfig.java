@@ -1,5 +1,6 @@
 package com.ftc.ftcli.config.ai;
 
+import com.ftc.ftcli.common.util.ai.AiTraceLog;
 import dev.langchain4j.model.chat.listener.ChatModelErrorContext;
 import dev.langchain4j.model.chat.listener.ChatModelListener;
 import dev.langchain4j.model.chat.listener.ChatModelRequestContext;
@@ -25,7 +26,7 @@ public class AIRequestLogConfig {
 
             @Override
             public void onRequest(ChatModelRequestContext requestContext) {
-                log.debug("[AI-Trace] 请求发送中...");
+               //TODO 后续有需要时，添加追踪日志
             }
 
             @Override
@@ -36,15 +37,12 @@ public class AIRequestLogConfig {
 
                 //2.打印Token使用情况
                 TokenUsage usage = response.metadata().tokenUsage();
-                if (usage != null) {
-                    log.info("[AI-Trace] Token使用: input=[{}], output=[{}], total=[{}]",
-                            usage.inputTokenCount(), usage.outputTokenCount(), usage.totalTokenCount());
-                }
+                AiTraceLog.logTokenUsage(usage);
             }
 
             @Override
             public void onError(ChatModelErrorContext errorContext) {
-                log.error("[AI-Trace] 请求异常: [{}]", errorContext.error().getMessage());
+                AiTraceLog.logError(errorContext.error().getMessage());
             }
         };
     }

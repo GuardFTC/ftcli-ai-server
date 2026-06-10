@@ -1,6 +1,7 @@
 package com.ftc.ftcli.config.ai;
 
 import com.ftc.ftcli.common.enums.doc.DocMetaDataKeyEnum;
+import com.ftc.ftcli.common.util.ai.AiTraceLog;
 import com.ftc.ftcli.properties.rag.RagIngestorProperties;
 import com.ftc.ftcli.properties.rag.WebSearchProperties;
 import dev.langchain4j.data.document.DocumentSplitter;
@@ -75,7 +76,22 @@ public class RagConfig {
 
     @Bean
     public QueryTransformer queryTransformer() {
-        return new CompressingQueryTransformer(model);
+
+        //1.创建压缩查询转换器
+        CompressingQueryTransformer compressingTransformer = new CompressingQueryTransformer(model);
+
+        //2.包装为带追踪日志的转换器
+        return query -> {
+
+            //3.获取压缩后的查询
+            var transformedQueries = compressingTransformer.transform(query);
+
+            //4.打印转换日志
+            AiTraceLog.logQueryTransform(query, transformedQueries);
+
+            //5.返回压缩后的查询
+            return transformedQueries;
+        };
     }
 
     @Bean
@@ -116,18 +132,10 @@ public class RagConfig {
             List<Content> contents = contentRetriever.retrieve(query);
 
             //4.打印检索日志
-            log.info("[AI-Trace] 检索查询: [{}]", query.text());
-            log.info("[AI-Trace] 检索命中: [{}]条", contents.size());
+            AiTraceLog.logRetrievalQuery(query.text());
+            AiTraceLog.logRetrievalResults(contents);
 
-            //5.遍历文档，打印文档日志
-            for (Content content : contents) {
-                String source = content.textSegment().metadata().getString("file_name");
-                String text = content.textSegment().text();
-                String preview = text.length() > 80 ? text.substring(0, 80) + "..." : text;
-                log.info("[AI-Trace] -来源=[{}], 内容=[{}]", source, preview);
-            }
-
-            //6.返回文档
+            //5.返回文档
             return contents;
         };
 
