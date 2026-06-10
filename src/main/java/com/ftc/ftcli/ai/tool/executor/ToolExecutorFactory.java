@@ -37,7 +37,7 @@ public class ToolExecutorFactory implements ApplicationContextAware {
 
         //2.判空
         if (null == toolExecutor) {
-            log.warn("[工具执行器工厂] 工具执行器不存在：{}", toolName);
+            log.warn("[工具执行器工厂] 工具执行器不存在：[{}]", toolName);
         }
 
         //3.返回
@@ -56,8 +56,16 @@ public class ToolExecutorFactory implements ApplicationContextAware {
             //3.获取实现类
             IToolExecutor executor = beansOfType.get(className);
 
-            //4.封装Map
-            TOOL_EXECUTOR_MAP.put(executor.getName(), executor.getToolExecutor());
+            //4.包装为带追踪日志的执行器
+            ToolExecutor tracedExecutor = (request, memoryId) -> {
+                log.info("[AI-Trace] 工具调用: name=[{}], args=[{}]", request.name(), request.arguments());
+                String result = executor.getToolExecutor().execute(request, memoryId);
+                log.info("[AI-Trace] 工具返回: name=[{}], result=[{}]", request.name(), result);
+                return result;
+            };
+
+            //5.封装Map
+            TOOL_EXECUTOR_MAP.put(executor.getName(), tracedExecutor);
         }
     }
 }

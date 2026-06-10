@@ -9,6 +9,7 @@ import dev.langchain4j.data.segment.TextSegment;
 import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.model.embedding.EmbeddingModel;
 import dev.langchain4j.model.openai.OpenAiTokenCountEstimator;
+import dev.langchain4j.rag.content.Content;
 import dev.langchain4j.rag.content.injector.ContentInjector;
 import dev.langchain4j.rag.content.injector.DefaultContentInjector;
 import dev.langchain4j.rag.content.retriever.ContentRetriever;
@@ -108,11 +109,33 @@ public class RagConfig {
                 .minScore(0.5)
                 .build();
 
-        //2.创建自定义查询路由器：默认使用文档检索器
+        //2.包装检索器，添加追踪日志
+        ContentRetriever tracedRetriever = query -> {
+
+            //3.检索
+            List<Content> contents = contentRetriever.retrieve(query);
+
+            //4.打印检索日志
+            log.info("[AI-Trace] 检索查询: [{}]", query.text());
+            log.info("[AI-Trace] 检索命中: [{}]条", contents.size());
+
+            //5.遍历文档，打印文档日志
+            for (Content content : contents) {
+                String source = content.textSegment().metadata().getString("file_name");
+                String text = content.textSegment().text();
+                String preview = text.length() > 80 ? text.substring(0, 80) + "..." : text;
+                log.info("[AI-Trace] -来源=[{}], 内容=[{}]", source, preview);
+            }
+
+            //6.返回文档
+            return contents;
+        };
+
+        //7.创建自定义查询路由器：默认使用文档检索器
         return query -> {
 
-            //3.返回检索器
-            return List.of(contentRetriever);
+            //8.返回检索器
+            return List.of(tracedRetriever);
         };
     }
 
