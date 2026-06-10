@@ -11,7 +11,7 @@ import java.util.Map;
 /**
  * @author 冯铁城 [17615007230@163.com]
  * @date 2026-06-05 15:31:33
- * @describe
+ * @describe 打开文件或文件夹
  */
 @Component
 public class OpenFileOrDirectory implements IToolExecutor {
