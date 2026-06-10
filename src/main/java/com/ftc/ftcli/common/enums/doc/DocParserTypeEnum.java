@@ -38,6 +38,11 @@ public enum DocParserTypeEnum {
     TXT("txt"),
 
     /**
+     * html文档
+     */
+    HTML("html"),
+
+    /**
      * 未知类型文档文档
      */
     UNKNOWN("unknown"),
