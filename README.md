@@ -24,7 +24,7 @@
 **ftcli** 是一个基于 Spring Boot 的 AI 助手服务，为命令行客户端或 Web 前端提供统一的 AI 能力接入层。项目以 [LangChain4j](https://github.com/langchain4j/langchain4j) 为核心，整合了：
 
 - **大模型对话**：支持同步与 SSE 流式响应
-- **RAG 知识库**：基于本地 Markdown 文档的向量检索问答
+- **RAG 知识库**：支持本地文件、URL、GitHub 链接多来源文档的向量检索问答
 - **联网搜索**：通过 Tavily 获取实时信息
 - **Function Calling**：可扩展的 AI 工具调用框架
 
@@ -51,15 +51,16 @@
 
 ### 知识库管理
 
-- 支持上传 **单个 Markdown 文件** 或 **整个目录**（递归扫描）
+- 支持上传 **本地文件/目录**、**URL 链接**、**GitHub 文件链接**
+- 支持 Markdown、PDF、YAML、TXT、HTML 等多种文档格式
 - 文档自动切分、向量化后写入 Chroma
 - 基于文件名 MD5 去重，基于内容 MD5 检测变更并自动更新向量
 - SQLite 作为文档元数据的唯一事实源，向量写入失败时可重试自愈
 
 ### 可扩展工具系统
 
-- 工具描述（名称、描述、参数）存储在 SQLite，支持运行时 CRUD
-- 工具执行器通过 Spring Bean 自动注册
+- 工具描述（名称、描述、参数）存储在 SQLite，支持运行时 CRUD 并自动刷新缓存
+- 工具执行器通过 Spring Bean 自动注册，启动时自动包装追踪日志
 - 启动时由 `ToolRegistry` 将描述与执行器绑定，运行时由 `ToolProvider` 动态匹配
 
 ### 开箱即用的管理页面
@@ -123,7 +124,7 @@
 
 ### 关键设计
 
-1. **RAG 流水线**：文档加载 → Markdown 解析 → 递归切分 → 智谱 Embedding → Chroma 存储 → 检索增强生成
+1. **RAG 流水线**：文档加载（FileSystem / URL / GitHub）→ 多格式解析 → 递归切分 → 智谱 Embedding → Chroma 存储 → 检索增强生成
 2. **会话记忆**：`TokenWindowChatMemory` + `RedisChatMemoryStore`，按 `chatId` 隔离多轮上下文
 3. **工具注册**：SQLite 存描述，Java 代码存执行逻辑，启动时绑定，解耦配置与实现
 4. **数据一致性**：向量写入成功后才更新 SQLite 记录；上传前按 `file_name_md5` 清理残留向量，保证幂等
@@ -366,6 +367,8 @@ ai:
 }
 ```
 
+> `path` 支持三种格式：本地文件/目录路径、URL 链接、GitHub 文件链接（自动识别加载方式）
+
 **上传响应 `EmbeddingFileUploadResult`：**
 
 ```json
@@ -419,6 +422,9 @@ ai:
 | 工具名 | 类型 | 描述 |
 |--------|------|------|
 | `openFileOrDirectory` | `system` | 使用系统默认程序打开指定文件或目录（支持 Windows / macOS / Linux） |
+| `openEdgeWithUrl` | `system` | 通过 Edge 浏览器打开指定 URL |
+| `openGitBashByPath` | `system` | 在指定目录下打开 Git Bash 终端 |
+| `runShell` | `system` | 在指定目录执行 Shell 命令并返回结果（支持超时控制） |
 
 ### 工具类型
 
@@ -484,7 +490,7 @@ curl -X POST http://localhost:6680/api/rest/v1/ai/tools \
   }'
 ```
 
-> 新增工具描述后需**重启应用**，`ToolRegistry` 才会重新加载并绑定执行器。
+> 新增工具描述后缓存自动刷新，无需重启应用。但新增工具**执行器**（Java 代码）仍需重启。
 
 #### 参数类型
 
@@ -558,11 +564,11 @@ ftcli/
     │   │   │   │   └── WebAiService.java
     │   │   │   └── tool/                # 工具调用框架
     │   │   │       ├── ToolRegistry.java
-    │   │   │       ├── executor/        # 工具执行器
+    │   │   │       ├── executor/        # 工具执行器（date/system）
     │   │   │       ├── provider/        # 工具提供者
     │   │   │       └── spec/            # 工具规格构建
     │   │   ├── config/
-    │   │   │   ├── ai/                  # AI、RAG、Embedding 配置
+    │   │   │   ├── ai/                  # AI、RAG、Embedding、追踪配置
     │   │   │   ├── redis/               # Redis 配置
     │   │   │   └── sqlite/              # SQLite 初始化
     │   │   ├── infra/
@@ -570,7 +576,12 @@ ftcli/
     │   │   │   └── sqlite/              # SQLite 仓储
     │   │   ├── entity/                  # 请求/响应实体
     │   │   ├── properties/              # 配置属性类
-    │   │   └── common/                  # 枚举、工具类
+    │   │   └── common/
+    │   │       ├── enums/               # 枚举（文档类型、结果码等）
+    │   │       └── util/                # 工具类
+    │   │           ├── ai/              # AI 追踪日志
+    │   │           ├── doc/             # 文档加载/解析工具
+    │   │           └── github/          # GitHub URL 解析
     │   └── resources/
     │       ├── application.yaml         # 应用配置
     │       ├── prompt/                  # AI 系统提示词
@@ -589,8 +600,8 @@ ftcli/
 
 1. **API Key 安全**：`application.yaml` 中包含多个第三方 API Key，生产环境请使用环境变量或密钥管理服务，避免泄露。
 2. **SQLite 路径**：配置中的 SQLite 路径需使用绝对路径，并根据部署环境调整。
-3. **文档格式**：知识库目前仅支持 **Markdown** 文件（`.md` / `.markdown`）。
-4. **工具热更新**：通过 API 增删改工具描述后，需要重启应用才能生效（`ToolRegistry` 在启动时加载）。
+3. **文档格式**：知识库支持 **Markdown**（`.md`）、**PDF**（`.pdf`）、**YAML**（`.yaml`/`.yml`）、**TXT**（`.txt`）、**HTML**（`.html`）格式文件，以及通过 URL 和 GitHub 链接加载远程文档。
+4. **工具热更新**：通过 API 增删改工具描述后，缓存自动刷新，无需重启应用。新增工具执行器（Java 代码）仍需重启。
 5. **外部依赖**：Redis 和 Chroma 不可用时，对应功能（会话记忆 / 知识库）将无法正常工作。
 6. **Chroma 版本**：项目使用 Chroma V2 API（`ChromaApiVersion.V2`），请确保 Chroma 服务版本兼容。
 
