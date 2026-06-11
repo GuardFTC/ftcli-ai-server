@@ -1,5 +1,6 @@
 package com.ftc.ftcli.service.impl;
 
+import com.ftc.ftcli.ai.tool.ToolRegistry;
 import com.ftc.ftcli.ai.tool.spec.ToolSpecEntity;
 import com.ftc.ftcli.infra.sqlite.ToolSpecRepository;
 import com.ftc.ftcli.service.AIToolService;
@@ -34,13 +35,29 @@ public class AIToolServiceImpl implements AIToolService {
             throw new IllegalArgumentException("工具名称已存在: " + entity.getName());
         }
 
-        //2.保存工具,返回
-        return toolSpecRepository.save(entity);
+        //2.保存工具
+        Long toolId = toolSpecRepository.save(entity);
+
+        //3.刷新工具缓存
+        refreshToolCache();
+
+        //4.返回
+        return toolId;
     }
 
     @Override
     public boolean removeTool(String name) {
-        return toolSpecRepository.deleteByName(name);
+
+        //1.删除工具
+        boolean result = toolSpecRepository.deleteByName(name);
+
+        //2.刷新工具缓存
+        if (result) {
+            refreshToolCache();
+        }
+
+        //3.返回
+        return result;
     }
 
     @Override
@@ -56,5 +73,20 @@ public class AIToolServiceImpl implements AIToolService {
 
         //3.再新增工具
         toolSpecRepository.save(entity);
+
+        //4.刷新工具缓存
+        refreshToolCache();
+    }
+
+    /**
+     * 刷新工具缓存
+     */
+    private void refreshToolCache() {
+
+        //1.查询所有工具描述
+        List<ToolSpecEntity> toolSpecEntities = toolSpecRepository.findAll();
+
+        //2.刷新工具缓存
+        ToolRegistry.loadToolCache(toolSpecEntities);
     }
 }
