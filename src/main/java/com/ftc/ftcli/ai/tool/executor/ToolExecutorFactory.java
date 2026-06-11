@@ -1,7 +1,5 @@
 package com.ftc.ftcli.ai.tool.executor;
 
-import com.ftc.ftcli.common.util.ai.AiTraceLog;
-import dev.langchain4j.service.tool.ToolExecutor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
@@ -23,7 +21,7 @@ public class ToolExecutorFactory implements ApplicationContextAware {
     /**
      * 工具执行器缓存
      */
-    private static final ConcurrentHashMap<String, ToolExecutor> TOOL_EXECUTOR_MAP = new ConcurrentHashMap<>();
+    private static final ConcurrentHashMap<String, IToolExecutor> TOOL_EXECUTOR_MAP = new ConcurrentHashMap<>();
 
     @Override
     public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
@@ -36,10 +34,10 @@ public class ToolExecutorFactory implements ApplicationContextAware {
      * @param toolName 工具名称
      * @return 工具执行器
      */
-    public static ToolExecutor getToolExecutor(String toolName) {
+    public static IToolExecutor getIToolExecutor(String toolName) {
 
         //1.获取工具执行器
-        ToolExecutor toolExecutor = TOOL_EXECUTOR_MAP.get(toolName);
+        IToolExecutor toolExecutor = TOOL_EXECUTOR_MAP.get(toolName);
 
         //2.判空
         if (null == toolExecutor) {
@@ -66,24 +64,8 @@ public class ToolExecutorFactory implements ApplicationContextAware {
             //3.获取实现类
             IToolExecutor executor = beansOfType.get(className);
 
-            //4.包装为带追踪日志的执行器
-            ToolExecutor tracedExecutor = (request, memoryId) -> {
-
-                //5.打印调用参数
-                AiTraceLog.logToolCall(request.name(), request.arguments());
-
-                //6.执行工具
-                String result = executor.getToolExecutor().execute(request, memoryId);
-
-                //7.打印返回结果
-                AiTraceLog.logToolResult(request.name(), result);
-
-                //8.返回结果
-                return result;
-            };
-
-            //9.封装Map
-            TOOL_EXECUTOR_MAP.put(executor.getName(), tracedExecutor);
+            //4.封装Map
+            TOOL_EXECUTOR_MAP.put(executor.getName(), executor);
         }
     }
 }

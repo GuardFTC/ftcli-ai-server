@@ -1,4 +1,4 @@
-package com.ftc.ftcli.ai.tool.executor.file;
+package com.ftc.ftcli.ai.tool.executor.impl.file;
 
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.util.ObjectUtil;
@@ -6,9 +6,11 @@ import cn.hutool.core.util.StrUtil;
 import com.alibaba.fastjson2.JSON;
 import com.ftc.ftcli.ai.tool.executor.IToolExecutor;
 import dev.langchain4j.service.tool.ToolExecutor;
+import dev.langchain4j.service.tool.ToolProviderRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
+import java.beans.Introspector;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -28,7 +30,12 @@ public class ReadFile implements IToolExecutor {
 
     @Override
     public String getName() {
-        return "readFile";
+        return Introspector.decapitalize(this.getClass().getSimpleName());
+    }
+
+    @Override
+    public boolean isMatch(ToolProviderRequest request) {
+        return true;
     }
 
     @Override

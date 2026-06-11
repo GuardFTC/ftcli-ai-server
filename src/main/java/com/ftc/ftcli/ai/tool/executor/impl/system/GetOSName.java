@@ -1,8 +1,11 @@
-package com.ftc.ftcli.ai.tool.executor.system;
+package com.ftc.ftcli.ai.tool.executor.impl.system;
 
 import com.ftc.ftcli.ai.tool.executor.IToolExecutor;
 import dev.langchain4j.service.tool.ToolExecutor;
+import dev.langchain4j.service.tool.ToolProviderRequest;
 import org.springframework.stereotype.Component;
+
+import java.beans.Introspector;
 
 /**
  * @author 冯铁城 [17615007230@163.com]
@@ -14,7 +17,12 @@ public class GetOSName implements IToolExecutor {
 
     @Override
     public String getName() {
-        return "getOSName";
+        return Introspector.decapitalize(this.getClass().getSimpleName());
+    }
+
+    @Override
+    public boolean isMatch(ToolProviderRequest request) {
+        return true;
     }
 
     @Override

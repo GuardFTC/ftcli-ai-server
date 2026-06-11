@@ -1,12 +1,14 @@
-package com.ftc.ftcli.ai.tool.executor.system;
+package com.ftc.ftcli.ai.tool.executor.impl.system;
 
 import cn.hutool.core.io.FileUtil;
 import com.alibaba.fastjson2.JSON;
 import com.ftc.ftcli.ai.tool.executor.IToolExecutor;
 import dev.langchain4j.service.tool.ToolExecutor;
+import dev.langchain4j.service.tool.ToolProviderRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
+import java.beans.Introspector;
 import java.io.IOException;
 import java.util.Map;
 
@@ -26,7 +28,12 @@ public class OpenGitBashByPath implements IToolExecutor {
 
     @Override
     public String getName() {
-        return "openGitBashByPath";
+        return Introspector.decapitalize(this.getClass().getSimpleName());
+    }
+
+    @Override
+    public boolean isMatch(ToolProviderRequest request) {
+        return true;
     }
 
     @Override

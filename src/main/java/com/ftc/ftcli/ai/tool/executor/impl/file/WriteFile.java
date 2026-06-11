@@ -1,11 +1,13 @@
-package com.ftc.ftcli.ai.tool.executor.file;
+package com.ftc.ftcli.ai.tool.executor.impl.file;
 
 import com.alibaba.fastjson2.JSON;
 import com.ftc.ftcli.ai.tool.executor.IToolExecutor;
 import dev.langchain4j.service.tool.ToolExecutor;
+import dev.langchain4j.service.tool.ToolProviderRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
+import java.beans.Introspector;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -27,7 +29,12 @@ public class WriteFile implements IToolExecutor {
 
     @Override
     public String getName() {
-        return "writeFile";
+        return Introspector.decapitalize(this.getClass().getSimpleName());
+    }
+
+    @Override
+    public boolean isMatch(ToolProviderRequest request) {
+        return true;
     }
 
     @Override
@@ -53,7 +60,6 @@ public class WriteFile implements IToolExecutor {
             return writeFile(filePath, lines, isAppend);
         };
     }
-
 
     /**
      * 写文件

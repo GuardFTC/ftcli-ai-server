@@ -1,4 +1,4 @@
-package com.ftc.ftcli.ai.tool.executor.date;
+package com.ftc.ftcli.ai.tool.executor.impl.date;
 
 import cn.hutool.core.date.DatePattern;
 import cn.hutool.core.date.DateUnit;
@@ -7,8 +7,10 @@ import cn.hutool.core.util.StrUtil;
 import com.alibaba.fastjson2.JSON;
 import com.ftc.ftcli.ai.tool.executor.IToolExecutor;
 import dev.langchain4j.service.tool.ToolExecutor;
+import dev.langchain4j.service.tool.ToolProviderRequest;
 import org.springframework.stereotype.Component;
 
+import java.beans.Introspector;
 import java.util.Date;
 import java.util.Map;
 
@@ -18,11 +20,16 @@ import java.util.Map;
  * @describe 计算当前时间距离当天结束还有多少时间
  */
 @Component
-public class GetRemainingTimeExecutor implements IToolExecutor {
+public class GetRemainingTime implements IToolExecutor {
 
     @Override
     public String getName() {
-        return "getRemainingTimeToDayEnd";
+        return Introspector.decapitalize(this.getClass().getSimpleName());
+    }
+
+    @Override
+    public boolean isMatch(ToolProviderRequest request) {
+        return true;
     }
 
     @Override

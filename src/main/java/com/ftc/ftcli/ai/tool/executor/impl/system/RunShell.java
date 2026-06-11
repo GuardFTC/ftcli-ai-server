@@ -1,12 +1,14 @@
-package com.ftc.ftcli.ai.tool.executor.system;
+package com.ftc.ftcli.ai.tool.executor.impl.system;
 
 import cn.hutool.core.util.ObjectUtil;
 import com.alibaba.fastjson2.JSON;
 import com.ftc.ftcli.ai.tool.executor.IToolExecutor;
 import dev.langchain4j.service.tool.ToolExecutor;
+import dev.langchain4j.service.tool.ToolProviderRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
+import java.beans.Introspector;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
@@ -30,7 +32,12 @@ public class RunShell implements IToolExecutor {
 
     @Override
     public String getName() {
-        return "runShell";
+        return Introspector.decapitalize(this.getClass().getSimpleName());
+    }
+
+    @Override
+    public boolean isMatch(ToolProviderRequest request) {
+        return true;
     }
 
     @Override
@@ -55,9 +62,7 @@ public class RunShell implements IToolExecutor {
             boolean isWindows = System.getProperty("os.name").toLowerCase().contains("win");
 
             //6.定义命令 Windows 用 cmd  Linux/Mac 用 sh
-            List<String> fullCommand = isWindows
-                    ? List.of("cmd.exe", "/c", command)
-                    : List.of("sh", "-c", command);
+            List<String> fullCommand = isWindows ? List.of("cmd.exe", "/c", command) : List.of("sh", "-c", command);
 
             //7.执行命令
             return run(fullCommand, filePath, timeout, isWindows);

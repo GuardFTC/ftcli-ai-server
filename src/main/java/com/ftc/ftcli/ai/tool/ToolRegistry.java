@@ -1,11 +1,10 @@
 package com.ftc.ftcli.ai.tool;
 
-import cn.hutool.core.collection.CollUtil;
+import com.ftc.ftcli.ai.tool.executor.IToolExecutor;
 import com.ftc.ftcli.ai.tool.executor.ToolExecutorFactory;
-import com.ftc.ftcli.ai.tool.provider.IToolProvider;
-import com.ftc.ftcli.ai.tool.provider.ToolProviderFactory;
 import com.ftc.ftcli.ai.tool.spec.ToolSpecBuilder;
 import com.ftc.ftcli.ai.tool.spec.ToolSpecEntity;
+import com.ftc.ftcli.common.util.ai.AiTraceLog;
 import com.ftc.ftcli.infra.sqlite.ToolSpecRepository;
 import dev.langchain4j.agent.tool.ToolSpecification;
 import dev.langchain4j.service.tool.ToolExecutor;
@@ -40,7 +39,7 @@ public class ToolRegistry implements ApplicationRunner {
     /**
      * 工具缓存 类型 -> (工具描述 -> 工具执行器)
      */
-    private static final ConcurrentHashMap<String, Map<ToolSpecification, ToolExecutor>> TOOL_CACHE = new ConcurrentHashMap<>();
+    private static final ConcurrentHashMap<ToolSpecification, IToolExecutor> TOOL_CACHE = new ConcurrentHashMap<>();
 
     /**
      * 注册ToolProvider Bean 根据用户消息动态匹配工具
@@ -54,24 +53,38 @@ public class ToolRegistry implements ApplicationRunner {
             //1.定义最终工具集合
             Map<ToolSpecification, ToolExecutor> matchedTools = new HashMap<>();
 
-            //2.遍历工具提供者集合
-            for (IToolProvider provider : ToolProviderFactory.getToolProviders()) {
+            //2.遍历工具缓存
+            for (ToolSpecification toolSpec : TOOL_CACHE.keySet()) {
 
-                //3.条件不匹配则跳过
-                if (!provider.isMatch(request)) {
+                //3.获取工具执行器
+                IToolExecutor toolExecutor = TOOL_CACHE.get(toolSpec);
+
+                //4.判断是否匹配
+                if (!toolExecutor.isMatch(request)) {
                     continue;
                 }
 
-                //4.获取匹配的工具
-                Map<ToolSpecification, ToolExecutor> tools = provider.getTools(TOOL_CACHE);
+                //5.如果匹配，设置Trace执行器，添加日志
+                ToolExecutor tracedExecutor = (toolExecutionRequest, memoryId) -> {
 
-                //5.工具不为空则加入最终集合
-                if (CollUtil.isNotEmpty(tools)) {
-                    matchedTools.putAll(tools);
-                }
+                    //6.打印调用参数
+                    AiTraceLog.logToolCall(toolExecutionRequest.name(), toolExecutionRequest.arguments());
+
+                    //7.执行工具
+                    String result = toolExecutor.getToolExecutor().execute(toolExecutionRequest, memoryId);
+
+                    //8.打印返回结果
+                    AiTraceLog.logToolResult(toolExecutionRequest.name(), result);
+
+                    //9.返回结果
+                    return result;
+                };
+
+                //10.如果匹配，则加入最终集合
+                matchedTools.put(toolSpec, tracedExecutor);
             }
 
-            //6.构建ToolProviderResult返回
+            //11.构建ToolProviderResult返回
             return ToolProviderResult.builder().addAll(matchedTools).build();
         };
     }
@@ -82,7 +95,10 @@ public class ToolRegistry implements ApplicationRunner {
         //1.从数据库查询全部工具描述
         List<ToolSpecEntity> toolSpecEntities = toolSpecRepository.findAll();
 
-        //2.加载工具缓存
+        //2.清空工具缓存
+        TOOL_CACHE.clear();
+
+        //3.加载工具缓存
         loadToolCache(toolSpecEntities);
     }
 
@@ -98,23 +114,23 @@ public class ToolRegistry implements ApplicationRunner {
         for (ToolSpecEntity entity : toolSpecEntities) {
 
             //3.构建ToolSpecification
-            ToolSpecification spec = ToolSpecBuilder.buildToolSpecification(entity);
+            ToolSpecification toolSpec = ToolSpecBuilder.buildToolSpecification(entity);
 
             //4.获取对应的执行器
-            ToolExecutor executor = ToolExecutorFactory.getToolExecutor(entity.getName());
+            IToolExecutor toolExecutor = ToolExecutorFactory.getIToolExecutor(entity.getName());
 
             //5.执行器不存在则跳过
-            if (null == executor) {
+            if (null == toolExecutor) {
                 toolCount--;
                 log.warn("[工具注册中心] 工具[{}]未找到对应执行器,跳过", entity.getName());
                 continue;
             }
 
             //6.按类型分组缓存
-            TOOL_CACHE.computeIfAbsent(entity.getType(), k -> new HashMap<>()).put(spec, executor);
+            TOOL_CACHE.put(toolSpec, toolExecutor);
         }
 
         //7.打印日志
-        log.info("[工具注册中心] 工具加载完成,共加载[{}]种类型,[{}]个工具", TOOL_CACHE.size(), toolCount);
+        log.info("[工具注册中心] 工具加载完成,共[{}]个工具", toolCount);
     }
 }
