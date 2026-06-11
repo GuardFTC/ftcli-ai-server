@@ -82,30 +82,39 @@ public class ToolRegistry implements ApplicationRunner {
         //1.从数据库查询全部工具描述
         List<ToolSpecEntity> toolSpecEntities = toolSpecRepository.findAll();
 
-        //2.定义加载工具总数
+        //2.加载工具缓存
+        loadToolCache(toolSpecEntities);
+    }
+
+    /**
+     * 加载工具缓存
+     */
+    public static void loadToolCache(List<ToolSpecEntity> toolSpecEntities) {
+
+        //1.定义加载工具总数
         int toolCount = toolSpecEntities.size();
 
-        //3.遍历构建工具
+        //2.遍历构建工具
         for (ToolSpecEntity entity : toolSpecEntities) {
 
-            //4.构建ToolSpecification
+            //3.构建ToolSpecification
             ToolSpecification spec = ToolSpecBuilder.buildToolSpecification(entity);
 
-            //5.获取对应的执行器
+            //4.获取对应的执行器
             ToolExecutor executor = ToolExecutorFactory.getToolExecutor(entity.getName());
 
-            //6.执行器不存在则跳过
+            //5.执行器不存在则跳过
             if (null == executor) {
                 toolCount--;
                 log.warn("[工具注册中心] 工具[{}]未找到对应执行器,跳过", entity.getName());
                 continue;
             }
 
-            //7.按类型分组缓存
+            //6.按类型分组缓存
             TOOL_CACHE.computeIfAbsent(entity.getType(), k -> new HashMap<>()).put(spec, executor);
         }
 
-        //8.打印日志
+        //7.打印日志
         log.info("[工具注册中心] 工具加载完成,共加载[{}]种类型,[{}]个工具", TOOL_CACHE.size(), toolCount);
     }
 }

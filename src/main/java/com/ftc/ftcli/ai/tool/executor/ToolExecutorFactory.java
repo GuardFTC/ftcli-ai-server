@@ -25,6 +25,11 @@ public class ToolExecutorFactory implements ApplicationContextAware {
      */
     private static final ConcurrentHashMap<String, ToolExecutor> TOOL_EXECUTOR_MAP = new ConcurrentHashMap<>();
 
+    @Override
+    public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
+        loadToolExecutorMap(applicationContext);
+    }
+
     /**
      * 获取工具执行器
      *
@@ -45,8 +50,12 @@ public class ToolExecutorFactory implements ApplicationContextAware {
         return toolExecutor;
     }
 
-    @Override
-    public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
+    /**
+     * 加载工具执行器Map
+     *
+     * @param applicationContext 上下文
+     */
+    public static void loadToolExecutorMap(ApplicationContext applicationContext) {
 
         //1.获取全部实现类
         final Map<String, IToolExecutor> beansOfType = applicationContext.getBeansOfType(IToolExecutor.class);

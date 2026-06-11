@@ -35,6 +35,15 @@ public class ToolProviderFactory implements ApplicationContextAware {
 
     @Override
     public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
+        loadToolProviderList(applicationContext);
+    }
+
+    /**
+     * 加载工具提供者集合
+     *
+     * @param applicationContext 上下文
+     */
+    public static void loadToolProviderList(ApplicationContext applicationContext) {
 
         //1.获取全部实现类
         final Map<String, IToolProvider> beansOfType = applicationContext.getBeansOfType(IToolProvider.class);
