@@ -37,7 +37,8 @@ public interface AIToolService {
     /**
      * 更新工具
      *
-     * @param entity 工具实体
+     * @param oldName 旧工具名称
+     * @param entity  工具实体
      */
-    void updateTool(ToolSpecEntity entity);
+    void updateTool(String oldName, ToolSpecEntity entity);
 }

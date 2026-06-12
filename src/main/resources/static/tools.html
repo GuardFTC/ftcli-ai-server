@@ -162,8 +162,8 @@
     <div class="modal">
         <h2>编辑工具</h2>
         <div class="form-row">
-            <label>工具名称（不可修改）</label>
-            <input type="text" id="editToolName" readonly style="background:#f5f5f5;">
+            <label>工具名称</label>
+            <input type="text" id="editToolName">
         </div>
         <div class="form-row">
             <label>工具描述</label>
@@ -438,10 +438,13 @@ function showToast(msg, type) {
 let allTools = [];
 
 // 编辑工具
+let editOriginalName = '';
+
 function editTool(name) {
     const tool = allTools.find(t => t.name === name);
     if (!tool) return;
 
+    editOriginalName = tool.name;
     document.getElementById('editToolName').value = tool.name;
     document.getElementById('editToolDesc').value = tool.description;
     document.getElementById('editToolType').value = tool.type;
@@ -530,7 +533,7 @@ async function saveEditTool() {
     const payload = { name, description, type, params: params.length > 0 ? params : null };
 
     try {
-        const resp = await fetch(API_BASE, {
+        const resp = await fetch(API_BASE + '?oldName=' + encodeURIComponent(editOriginalName), {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)

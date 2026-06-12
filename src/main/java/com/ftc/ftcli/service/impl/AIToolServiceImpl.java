@@ -61,20 +61,25 @@ public class AIToolServiceImpl implements AIToolService {
     }
 
     @Override
-    public void updateTool(ToolSpecEntity entity) {
+    public void updateTool(String oldName, ToolSpecEntity entity) {
 
-        //1.校验工具是否存在
-        if (!toolSpecRepository.existsByName(entity.getName())) {
-            throw new IllegalArgumentException("工具不存在: " + entity.getName());
+        //1.校验旧工具是否存在
+        if (!toolSpecRepository.existsByName(oldName)) {
+            throw new IllegalArgumentException("工具不存在: " + oldName);
         }
 
-        //2.先删除旧工具
-        toolSpecRepository.deleteByName(entity.getName());
+        //2.如果名称发生变更，校验新名称是否已被占用
+        if (!oldName.equals(entity.getName()) && toolSpecRepository.existsByName(entity.getName())) {
+            throw new IllegalArgumentException("工具名称已存在: " + entity.getName());
+        }
 
-        //3.再新增工具
+        //3.删除旧工具
+        toolSpecRepository.deleteByName(oldName);
+
+        //4.保存新工具
         toolSpecRepository.save(entity);
 
-        //4.刷新工具缓存
+        //5.刷新工具缓存
         refreshToolCache();
     }
 

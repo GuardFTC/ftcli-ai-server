@@ -69,13 +69,13 @@ public class AIToolController {
 
     @PutMapping
     @Operation(summary = "更新工具")
-    public RestfulResult<Void> updateTool(@RequestBody ToolSpecEntity toolSpec) {
+    public RestfulResult<Void> updateTool(@RequestParam String oldName, @RequestBody ToolSpecEntity toolSpec) {
 
         //1.打印日志
-        log.info("[AI] 更新工具 入参:[{}]", toolSpec);
+        log.info("[AI] 更新工具 入参: oldName=[{}], toolSpec=[{}]", oldName, toolSpec);
 
         //2.更新工具
-        aiToolService.updateTool(toolSpec);
+        aiToolService.updateTool(oldName, toolSpec);
         log.info("[AI] 更新工具完成");
 
         //3.返回
