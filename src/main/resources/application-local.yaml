@@ -1,0 +1,19 @@
+#LangChain4j配置
+langchain4j:
+  open-ai:
+    chat-model:
+      api-key: ${DEEPSEEK_API_KEY:}
+    streaming-chat-model:
+      api-key: ${DEEPSEEK_API_KEY:}
+
+#AI配置
+ai:
+  embedding:
+    model:
+      zhipu:
+        api-key: ${ZHIPU_API_KEY:}
+    github:
+      token: ${GITHUB_TOKEN:}
+  rag:
+    web-search:
+      api-key: ${TAVILY_API_KEY:}
