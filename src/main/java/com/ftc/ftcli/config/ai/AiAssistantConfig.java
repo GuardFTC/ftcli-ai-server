@@ -1,5 +1,6 @@
 package com.ftc.ftcli.config.ai;
 
+import cn.hutool.core.io.resource.ResourceUtil;
 import com.ftc.ftcli.ai.assistant.LocalAiService;
 import com.ftc.ftcli.ai.assistant.WebAiService;
 import com.ftc.ftcli.ai.store.SqliteChatMemoryStore;
@@ -54,9 +55,15 @@ public class AiAssistantConfig {
 
     @Bean
     public WebAiService webAiService() {
+
+        //1.加载 prompt 文件并拼接 Skills 清单
+        String systemMessage = buildSystemMessage("prompt/web-service.markdown");
+
+        //2.构建 WebAiService
         return AiServices.builder(WebAiService.class)
                 .chatModel(model)
                 .streamingChatModel(streamingModel)
+                .systemMessageProvider(memoryId -> systemMessage)
                 .chatMemoryProvider(memoryId -> TokenWindowChatMemory.builder()
                         .id(memoryId)
                         .maxTokens(chatMemoryProperties.getMaxTokens(), new OpenAiTokenCountEstimator(chatMemoryProperties.getTokenEstimatorModel()))
@@ -72,9 +79,15 @@ public class AiAssistantConfig {
 
     @Bean
     public LocalAiService localAiService() {
+
+        //1.加载 prompt 文件并拼接 Skills 清单
+        String systemMessage = buildSystemMessage("prompt/local-service.markdown");
+
+        //2.构建 LocalAiService
         return AiServices.builder(LocalAiService.class)
                 .chatModel(model)
                 .streamingChatModel(streamingModel)
+                .systemMessageProvider(memoryId -> systemMessage)
                 .chatMemoryProvider(memoryId -> TokenWindowChatMemory.builder()
                         .id(memoryId)
                         .maxTokens(chatMemoryProperties.getMaxTokens(), new OpenAiTokenCountEstimator(chatMemoryProperties.getTokenEstimatorModel()))
@@ -87,5 +100,25 @@ public class AiAssistantConfig {
                         .contentInjector(contentInjector)
                         .build())
                 .build();
+    }
+
+    /**
+     * 加载 classpath 下的 prompt 文件,并在末尾拼接可用 Skills 清单
+     *
+     * @param promptResource classpath 下的 prompt 资源路径
+     * @return 完整的 system message
+     */
+    private String buildSystemMessage(String promptResource) {
+
+        //1.读取 prompt 文件内容 (直接读取为 UTF-8 字符串)
+        String promptContent = ResourceUtil.readUtf8Str(promptResource);
+
+        //2.获取 Skills 清单
+        String skillsList = skills.formatAvailableSkills();
+
+        //3.拼接并返回
+        return promptContent + "\n\n---\n\n"
+                + "你拥有以下可按需激活的技能,当用户请求与某个技能相关时,先调用 activate_skill 工具激活它:\n"
+                + skillsList;
     }
 }

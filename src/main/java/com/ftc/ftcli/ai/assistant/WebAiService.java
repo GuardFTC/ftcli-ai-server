@@ -2,7 +2,6 @@ package com.ftc.ftcli.ai.assistant;
 
 import dev.langchain4j.service.MemoryId;
 import dev.langchain4j.service.Result;
-import dev.langchain4j.service.SystemMessage;
 import dev.langchain4j.service.UserMessage;
 import reactor.core.publisher.Flux;
 
@@ -20,7 +19,6 @@ public interface WebAiService {
      * @param userMessage 用户消息
      * @return 响应结果
      */
-    @SystemMessage(fromResource = "prompt/web-service.markdown")
     Result<String> chat(@MemoryId String chatId, @UserMessage String userMessage);
 
     /**
@@ -30,6 +28,5 @@ public interface WebAiService {
      * @param userMessage 用户消息
      * @return 响应结果
      */
-    @SystemMessage(fromResource = "prompt/web-service.markdown")
     Flux<String> chatStream(@MemoryId String chatId, @UserMessage String userMessage);
 }
