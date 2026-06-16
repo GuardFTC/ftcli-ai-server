@@ -1,8 +1,3 @@
----
-name: git-commit
-description: 分析 Git 工作区变更并生成规范的 Commit Message，然后执行提交
----
-
 ## 目标
 分析用户当前 Git 仓库的未提交变更，生成符合 Conventional Commits 规范的 commit message，并完成提交。
 
