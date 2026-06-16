@@ -1,5 +1,6 @@
 package com.ftc.ftcli.service.impl;
 
+import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.io.resource.ResourceUtil;
 import cn.hutool.core.util.StrUtil;
 import com.ftc.ftcli.ai.service.AiServiceHolder;
@@ -11,6 +12,7 @@ import dev.langchain4j.skills.Skills;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.net.URL;
 import java.util.ArrayList;
@@ -45,6 +47,7 @@ public class AISkillServiceImpl implements AISkillService {
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public boolean addSkill(SkillEntity payload) {
 
         //1.检查payload
@@ -65,6 +68,7 @@ public class AISkillServiceImpl implements AISkillService {
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public boolean updateSkill(String oldName, SkillEntity payload) {
 
         //1.判断是否存在
@@ -92,6 +96,7 @@ public class AISkillServiceImpl implements AISkillService {
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public boolean removeSkill(Long id) {
 
         //1.判断是否存在
@@ -151,7 +156,7 @@ public class AISkillServiceImpl implements AISkillService {
         log.info("[Skill] 加载完成,共[{}]个技能", skills.size());
 
         //9.返回
-        return Skills.from(skills);
+        return CollUtil.isEmpty(skills) ? null : Skills.from(skills);
     }
 
     /**

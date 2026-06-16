@@ -1,5 +1,6 @@
 package com.ftc.ftcli.ai.service;
 
+import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.io.resource.ResourceUtil;
 import com.ftc.ftcli.ai.store.SqliteChatMemoryStore;
 import com.ftc.ftcli.properties.chat.ChatMemoryProperties;
@@ -21,6 +22,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.stereotype.Component;
+
+import java.util.ArrayList;
 
 /**
  * @author 冯铁城 [17615007230@163.com]
@@ -72,7 +75,12 @@ public class AiServiceHolder {
         //1.加载Skills
         Skills skills = aiSkillService.loadSkills();
 
-        //2.构建WebAiService
+        //2.获取ToolProviders
+        ArrayList<ToolProvider> toolProviders = null == skills ?
+                CollUtil.newArrayList(toolProvider) :
+                CollUtil.newArrayList(toolProvider, skills.toolProvider());
+
+        //3.构建WebAiService
         String webSystemMessage = buildSystemMessage("prompt/web-service.md", skills);
         this.webAiService = AiServices.builder(WebAiService.class)
                 .chatModel(model)
@@ -83,14 +91,14 @@ public class AiServiceHolder {
                         .maxTokens(chatMemoryProperties.getMaxTokens(), new OpenAiTokenCountEstimator(chatMemoryProperties.getTokenEstimatorModel()))
                         .chatMemoryStore(chatMemoryStore)
                         .build())
-                .toolProviders(toolProvider, skills.toolProvider())
+                .toolProviders(toolProviders)
                 .retrievalAugmentor(DefaultRetrievalAugmentor.builder()
                         .queryTransformer(queryTransformer)
                         .queryRouter(webAiQueryRouter)
                         .build())
                 .build();
 
-        //3.构建LocalAiService
+        //4.构建LocalAiService
         String localSystemMessage = buildSystemMessage("prompt/local-service.md", skills);
         this.localAiService = AiServices.builder(LocalAiService.class)
                 .chatModel(model)
@@ -101,7 +109,7 @@ public class AiServiceHolder {
                         .maxTokens(chatMemoryProperties.getMaxTokens(), new OpenAiTokenCountEstimator(chatMemoryProperties.getTokenEstimatorModel()))
                         .chatMemoryStore(chatMemoryStore)
                         .build())
-                .toolProviders(toolProvider, skills.toolProvider())
+                .toolProviders(toolProviders)
                 .retrievalAugmentor(DefaultRetrievalAugmentor.builder()
                         .queryTransformer(queryTransformer)
                         .queryRouter(localAiQueryRouter)
@@ -121,10 +129,15 @@ public class AiServiceHolder {
         //1.读取 prompt 文件内容
         String promptContent = ResourceUtil.readUtf8Str(promptResource);
 
-        //2.获取 Skills 清单
+        //2.判空处理
+        if (skills == null) {
+            return promptContent;
+        }
+
+        //3.获取 Skills 清单
         String skillsList = skills.formatAvailableSkills();
 
-        //3.拼接并返回
+        //4.拼接并返回
         return promptContent + "\n\n---\n\n"
                 + "你拥有以下可按需激活的技能,当用户请求与某个技能相关时,先调用 activate_skill 工具激活它:\n"
                 + skillsList;
