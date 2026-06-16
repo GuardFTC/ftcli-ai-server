@@ -1,12 +1,10 @@
 package com.ftc.ftcli.service.impl;
 
 import cn.hutool.core.util.IdUtil;
-import com.ftc.ftcli.ai.assistant.LocalAiService;
-import com.ftc.ftcli.ai.assistant.WebAiService;
+import com.ftc.ftcli.ai.service.AiServiceHolder;
 import com.ftc.ftcli.common.util.ai.AiTraceLog;
 import com.ftc.ftcli.entity.payload.ChatPayload;
 import com.ftc.ftcli.service.AiChatService;
-import dev.langchain4j.service.Result;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -22,9 +20,7 @@ import reactor.core.publisher.Flux;
 @RequiredArgsConstructor
 public class AIChatServiceImpl implements AiChatService {
 
-    private final WebAiService webAiService;
-
-    private final LocalAiService localAiService;
+    private final AiServiceHolder aiServiceHolder;
 
     @Override
     public String getChatId() {
@@ -40,9 +36,9 @@ public class AIChatServiceImpl implements AiChatService {
         //2.基于是否为本地问答进行LLM链路调用
         String result;
         if (payload.getIsLocal()) {
-            result = chatByLocalAi(payload);
+            result = aiServiceHolder.getLocalAiService().chat(payload.getChatId(), payload.getUserMessage()).content();
         } else {
-            result = chatByWebAi(payload);
+            result = aiServiceHolder.getWebAiService().chat(payload.getChatId(), payload.getUserMessage()).content();
         }
 
         //3.打印总耗时
@@ -61,42 +57,12 @@ public class AIChatServiceImpl implements AiChatService {
         //2.基于是否为本地问答进行LLM链路调用
         Flux<String> flux;
         if (payload.getIsLocal()) {
-            flux = localAiService.chatStream(payload.getChatId(), payload.getUserMessage());
+            flux = aiServiceHolder.getLocalAiService().chatStream(payload.getChatId(), payload.getUserMessage());
         } else {
-            flux = webAiService.chatStream(payload.getChatId(), payload.getUserMessage());
+            flux = aiServiceHolder.getWebAiService().chatStream(payload.getChatId(), payload.getUserMessage());
         }
 
         //3.打印总耗时,并返回结果
         return flux.doOnComplete(() -> AiTraceLog.logTotalTime(start));
-    }
-
-    /**
-     * 通过本地问答
-     *
-     * @param payload 聊天参数
-     * @return 响应结果
-     */
-    private String chatByLocalAi(ChatPayload payload) {
-
-        //1.进行聊天
-        Result<String> aiResult = localAiService.chat(payload.getChatId(), payload.getUserMessage());
-
-        //2.返回
-        return aiResult.content();
-    }
-
-    /**
-     * 通过网络问答
-     *
-     * @param payload 聊天参数
-     * @return 响应结果
-     */
-    private String chatByWebAi(ChatPayload payload) {
-
-        //1.进行聊天
-        Result<String> aiResult = webAiService.chat(payload.getChatId(), payload.getUserMessage());
-
-        //2.返回
-        return aiResult.content();
     }
 }

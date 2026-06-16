@@ -1,6 +1,7 @@
 package com.ftc.ftcli.service;
 
 import com.ftc.ftcli.entity.skill.SkillEntity;
+import dev.langchain4j.skills.Skills;
 
 import java.util.List;
 
@@ -50,4 +51,11 @@ public interface AISkillService {
      * @return 是否删除成功
      */
     boolean removeSkill(Long id);
+
+    /**
+     * 加载Skill
+     *
+     * @return Skills {@link Skills}
+     */
+    Skills loadSkills();
 }

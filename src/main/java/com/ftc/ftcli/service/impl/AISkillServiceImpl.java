@@ -2,14 +2,18 @@ package com.ftc.ftcli.service.impl;
 
 import cn.hutool.core.io.resource.ResourceUtil;
 import cn.hutool.core.util.StrUtil;
+import com.ftc.ftcli.ai.service.AiServiceHolder;
 import com.ftc.ftcli.entity.skill.SkillEntity;
 import com.ftc.ftcli.infra.sqlite.SkillRepository;
 import com.ftc.ftcli.service.AISkillService;
-import lombok.RequiredArgsConstructor;
+import dev.langchain4j.skills.Skill;
+import dev.langchain4j.skills.Skills;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -19,10 +23,16 @@ import java.util.List;
  */
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class AISkillServiceImpl implements AISkillService {
 
     private final SkillRepository skillRepository;
+
+    private final AiServiceHolder aiServiceHolder;
+
+    public AISkillServiceImpl(SkillRepository skillRepository, @Lazy AiServiceHolder aiServiceHolder) {
+        this.skillRepository = skillRepository;
+        this.aiServiceHolder = aiServiceHolder;
+    }
 
     @Override
     public List<SkillEntity> getSkills() {
@@ -43,7 +53,15 @@ public class AISkillServiceImpl implements AISkillService {
         }
 
         //2.保存
-        return skillRepository.save(payload);
+        boolean success = skillRepository.save(payload);
+
+        //3.重建AI服务
+        if (success) {
+            aiServiceHolder.buildAiService();
+        }
+
+        //4.返回
+        return success;
     }
 
     @Override
@@ -62,7 +80,15 @@ public class AISkillServiceImpl implements AISkillService {
         }
 
         //3.更新
-        return skillRepository.update(payload);
+        boolean success = skillRepository.update(payload);
+
+        //4.重建AI服务
+        if (success) {
+            aiServiceHolder.buildAiService();
+        }
+
+        //5.返回
+        return success;
     }
 
     @Override
@@ -76,7 +102,56 @@ public class AISkillServiceImpl implements AISkillService {
         }
 
         //2.删除
-        return skillRepository.deleteById(id);
+        boolean success = skillRepository.deleteById(id);
+
+        //3.重建AI服务
+        if (success) {
+            aiServiceHolder.buildAiService();
+        }
+
+        //4.返回
+        return success;
+    }
+
+    @Override
+    public Skills loadSkills() {
+
+        //1.查询Skill列表
+        List<SkillEntity> skillBeans = getSkills();
+
+        //2.定义最终加载Skill集合
+        List<Skill> skills = new ArrayList<>();
+
+        //3.遍历Skill列表
+        for (SkillEntity skillBean : skillBeans) {
+
+            //4.获取内容,如果内容为空,从文件中获取
+            String content = StrUtil.isNotBlank(skillBean.getSkillMdContent()) ?
+                    skillBean.getSkillMdContent() :
+                    ResourceUtil.readUtf8Str(skillBean.getSkillMdPath());
+
+            //5.如果内容为空，跳过
+            if (StrUtil.isBlank(content)) {
+                log.warn("[Skill] 加载失败,无法获取到内容: [{}]", skillBean.getSkillName());
+                continue;
+            }
+
+            //6.创建 Skill
+            Skill skill = Skill.builder()
+                    .name(skillBean.getSkillName())
+                    .description(skillBean.getSkillDescription())
+                    .content(content)
+                    .build();
+
+            //7.存入集合
+            skills.add(skill);
+        }
+
+        //8.打印日志
+        log.info("[Skill] 加载完成,共[{}]个技能", skills.size());
+
+        //9.返回
+        return Skills.from(skills);
     }
 
     /**
