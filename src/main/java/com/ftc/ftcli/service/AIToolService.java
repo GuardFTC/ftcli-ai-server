@@ -21,10 +21,10 @@ public interface AIToolService {
     /**
      * 新增工具
      *
-     * @param entity 工具实体
+     * @param toolSpec 工具实体
      * @return 工具ID
      */
-    Long addTool(ToolSpecEntity entity);
+    Long addTool(ToolSpecEntity toolSpec);
 
     /**
      * 删除工具
@@ -38,7 +38,7 @@ public interface AIToolService {
      * 更新工具
      *
      * @param oldName 旧工具名称
-     * @param entity  工具实体
+     * @param toolSpec  工具实体
      */
-    void updateTool(String oldName, ToolSpecEntity entity);
+    void updateTool(String oldName, ToolSpecEntity toolSpec);
 }

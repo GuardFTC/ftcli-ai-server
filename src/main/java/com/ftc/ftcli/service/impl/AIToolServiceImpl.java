@@ -29,15 +29,15 @@ public class AIToolServiceImpl implements AIToolService {
     }
 
     @Override
-    public Long addTool(ToolSpecEntity entity) {
+    public Long addTool(ToolSpecEntity toolSpec) {
 
         //1.校验工具名称是否已存在
-        if (toolSpecRepository.existsByName(entity.getName())) {
-            throw new IllegalArgumentException("工具名称已存在: " + entity.getName());
+        if (toolSpecRepository.existsByName(toolSpec.getName())) {
+            throw new IllegalArgumentException("工具名称已存在: " + toolSpec.getName());
         }
 
         //2.保存工具
-        Long toolId = toolSpecRepository.save(entity);
+        Long toolId = toolSpecRepository.save(toolSpec);
 
         //3.刷新工具缓存
         refreshToolCache();
@@ -63,7 +63,7 @@ public class AIToolServiceImpl implements AIToolService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void updateTool(String oldName, ToolSpecEntity entity) {
+    public void updateTool(String oldName, ToolSpecEntity toolSpec) {
 
         //1.校验旧工具是否存在
         if (!toolSpecRepository.existsByName(oldName)) {
@@ -71,15 +71,15 @@ public class AIToolServiceImpl implements AIToolService {
         }
 
         //2.如果名称发生变更，校验新名称是否已被占用
-        if (!oldName.equals(entity.getName()) && toolSpecRepository.existsByName(entity.getName())) {
-            throw new IllegalArgumentException("工具名称已存在: " + entity.getName());
+        if (!oldName.equals(toolSpec.getName()) && toolSpecRepository.existsByName(toolSpec.getName())) {
+            throw new IllegalArgumentException("工具名称已存在: " + toolSpec.getName());
         }
 
         //3.删除旧工具
         toolSpecRepository.deleteByName(oldName);
 
         //4.保存新工具
-        toolSpecRepository.save(entity);
+        toolSpecRepository.save(toolSpec);
 
         //5.刷新工具缓存
         refreshToolCache();
