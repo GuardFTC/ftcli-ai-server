@@ -106,8 +106,8 @@ public class SkillRepository {
         int affected = jdbcTemplate.update(sql,
                 entity.getSkillName(),
                 entity.getSkillDescription(),
-                entity.getSkillMdContent(),
-                entity.getSkillMdPath()
+                entity.getSkillMdContent() != null ? entity.getSkillMdContent() : "",
+                entity.getSkillMdPath() != null ? entity.getSkillMdPath() : ""
         );
 
         //3.返回
@@ -129,8 +129,8 @@ public class SkillRepository {
         int affected = jdbcTemplate.update(sql,
                 entity.getSkillName(),
                 entity.getSkillDescription(),
-                entity.getSkillMdContent(),
-                entity.getSkillMdPath(),
+                entity.getSkillMdContent() != null ? entity.getSkillMdContent() : "",
+                entity.getSkillMdPath() != null ? entity.getSkillMdPath() : "",
                 entity.getId()
         );
 
