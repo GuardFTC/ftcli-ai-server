@@ -16,4 +16,9 @@ public class WebSearchProperties {
      * Tavily API Key
      */
     private String apiKey;
+
+    /**
+     * 检索最大结果数
+     */
+    private Integer maxResults;
 }

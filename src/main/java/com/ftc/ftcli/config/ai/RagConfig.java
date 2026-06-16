@@ -2,6 +2,7 @@ package com.ftc.ftcli.config.ai;
 
 import com.ftc.ftcli.common.enums.doc.DocMetaDataKeyEnum;
 import com.ftc.ftcli.common.util.ai.AiTraceLog;
+import com.ftc.ftcli.properties.rag.ContentRetrieverProperties;
 import com.ftc.ftcli.properties.rag.RagIngestorProperties;
 import com.ftc.ftcli.properties.rag.RerankProperties;
 import com.ftc.ftcli.properties.rag.WebSearchProperties;
@@ -12,6 +13,8 @@ import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.model.embedding.EmbeddingModel;
 import dev.langchain4j.model.jina.JinaScoringModel;
 import dev.langchain4j.model.openai.OpenAiTokenCountEstimator;
+import dev.langchain4j.model.output.Response;
+import dev.langchain4j.model.scoring.ScoringModel;
 import dev.langchain4j.rag.content.Content;
 import dev.langchain4j.rag.content.aggregator.ReRankingContentAggregator;
 import dev.langchain4j.rag.content.injector.ContentInjector;
@@ -46,7 +49,7 @@ import static java.util.Arrays.asList;
 @Slf4j
 @Configuration
 @RequiredArgsConstructor
-@EnableConfigurationProperties({WebSearchProperties.class, RagIngestorProperties.class, RerankProperties.class})
+@EnableConfigurationProperties({WebSearchProperties.class, RagIngestorProperties.class, RerankProperties.class, ContentRetrieverProperties.class})
 public class RagConfig {
 
     private final ChatModel model;
@@ -55,9 +58,11 @@ public class RagConfig {
 
     private final EmbeddingStore<TextSegment> embeddingStore;
 
+    private final RagIngestorProperties ingestorProperties;
+
     private final WebSearchProperties webSearchProperties;
 
-    private final RagIngestorProperties ingestorProperties;
+    private final ContentRetrieverProperties contentRetrieverProperties;
 
     private final RerankProperties rerankProperties;
 
@@ -110,7 +115,7 @@ public class RagConfig {
         //2.创建网络内容检索器
         ContentRetriever webSearchContentRetriever = WebSearchContentRetriever.builder()
                 .webSearchEngine(webSearchEngine)
-                .maxResults(3)
+                .maxResults(webSearchProperties.getMaxResults())
                 .build();
 
         //3.使用LLM路由：由模型自行判断用户问题是否需要联网检索，替代正则匹配
@@ -126,8 +131,8 @@ public class RagConfig {
         ContentRetriever contentRetriever = EmbeddingStoreContentRetriever.builder()
                 .embeddingModel(embeddingModel)
                 .embeddingStore(embeddingStore)
-                .maxResults(5)
-                .minScore(0.5)
+                .maxResults(contentRetrieverProperties.getMaxResults())
+                .minScore(contentRetrieverProperties.getMinScore())
                 .build();
 
         //2.包装检索器，添加追踪日志
@@ -172,10 +177,23 @@ public class RagConfig {
                 .modelName(rerankProperties.getModel())
                 .build();
 
-        //2.定义内容聚合器，基于重排模型进行文档二次过滤
+        //2.包装评分模型，添加追踪日志
+        ScoringModel tracedScoringModel = (segments, query) -> {
+
+            //3.调用评分
+            Response<List<Double>> response = scoringModel.scoreAll(segments, query);
+
+            //4.打印重排日志
+            AiTraceLog.logRerank(query, segments, response.content(), rerankProperties.getMaxResults());
+
+            //5.返回
+            return response;
+        };
+
+        //6.定义内容聚合器，基于重排模型进行文档二次过滤
         return ReRankingContentAggregator.builder()
-                .scoringModel(scoringModel)
-                .minScore(0.8)
+                .scoringModel(tracedScoringModel)
+                .maxResults(rerankProperties.getMaxResults())
                 .build();
     }
 }

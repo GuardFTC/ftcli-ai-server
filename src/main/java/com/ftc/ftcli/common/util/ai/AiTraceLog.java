@@ -1,11 +1,14 @@
 package com.ftc.ftcli.common.util.ai;
 
+import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.date.DateUtil;
+import dev.langchain4j.data.segment.TextSegment;
 import dev.langchain4j.model.output.TokenUsage;
 import dev.langchain4j.rag.content.Content;
 import dev.langchain4j.rag.query.Query;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
@@ -71,6 +74,49 @@ public class AiTraceLog {
             log.info("{}  -来源=[{}], 内容=[{}]", PREFIX, source, preview);
         }
     }
+
+    /**
+     * 打印重排序日志
+     *
+     * @param queryText  查询文本
+     * @param segments   原始文档片段
+     * @param scores     评分结果
+     * @param maxResults 最大返回结果数
+     */
+    public static void logRerank(String queryText, List<TextSegment> segments, List<Double> scores, Integer maxResults) {
+
+        //1.打印重排查询
+        log.info("{} 重排序: query=[{}], 检索文档数=[{}], 结果文档数=[{}]", PREFIX, compressString(queryText, DEFAULT_MAX_LENGTH), segments.size(), maxResults);
+
+        //2.定义轻量级数据结构record
+        record Scored(int index, double score) {
+        }
+
+        //3.将文档索引，以及文档分数封装到record集合
+        List<Scored> sorted = new ArrayList<>();
+        for (int i = 0; i < scores.size(); i++) {
+            sorted.add(new Scored(i, scores.get(i)));
+        }
+
+        //4.按照分数从高到低排序
+        sorted.sort((a, b) -> Double.compare(b.score, a.score));
+
+        //5.截取 最大返回结果数 个文档
+        sorted = CollUtil.sub(sorted, 0, maxResults);
+
+        //6.打印选中文档
+        for (int rank = 0; rank < sorted.size(); rank++) {
+
+            //7.获取文档分数，文档来源，文档内容缩写
+            Scored score = sorted.get(rank);
+            String source = segments.get(score.index).metadata().getString("file_name");
+            String preview = compressString(segments.get(score.index).text(), 60);
+
+            //8.打印日志
+            log.info("{}  -[{}] score=[{}], 来源=[{}], 内容=[{}]", PREFIX, rank + 1, String.format("%.4f", score.score), source, preview);
+        }
+    }
+
 
     /**
      * 打印工具调用日志
