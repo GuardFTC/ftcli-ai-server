@@ -15,7 +15,7 @@ import java.util.List;
 
 /**
  * @author 冯铁城 [17615007230@163.com]
- * @date 2026-06-02 11:19:28
+ * @date 2026-06-02 11:20:28
  * @describe AI向量嵌入控制器
  */
 @Slf4j
