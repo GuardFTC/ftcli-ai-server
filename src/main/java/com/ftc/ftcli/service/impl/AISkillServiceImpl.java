@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.net.URL;
 import java.util.List;
 
 /**
@@ -104,7 +105,8 @@ public class AISkillServiceImpl implements AISkillService {
         if (StrUtil.isNotBlank(payload.getSkillMdPath())) {
 
             //4.判断文件在resource文件夹下是否存在
-            if (ResourceUtil.getResource(payload.getSkillMdPath()) == null) {
+            URL resource = ResourceUtil.getResource(payload.getSkillMdPath());
+            if (resource == null) {
                 log.warn("[Skill] {}失败 SKILL.md文件在资源路径下不存在: [{}] [{}]", logAction, payload.getSkillName(), payload.getSkillMdPath());
                 return true;
             }

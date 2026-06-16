@@ -45,7 +45,7 @@ public class SkillConfig {
 
             //5.如果内容为空，跳过
             if (StrUtil.isBlank(content)) {
-                log.warn("[Skill] 加载失败,无法获取到内容: [{}]", skillBean.getSkillName());
+                log.warn("[Skill] 技能加载失败,无法获取到内容: [{}]", skillBean.getSkillName());
                 continue;
             }
 
@@ -61,7 +61,7 @@ public class SkillConfig {
         }
 
         //8.打印日志
-        log.info("[Skill] 加载完成,共[{}]个技能", skills.size());
+        log.info("[Skill] 技能加载完成,共[{}]个技能", skills.size());
 
         //9.创建 Skills
         return Skills.from(skills);
