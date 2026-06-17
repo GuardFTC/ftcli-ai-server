@@ -18,13 +18,13 @@ import org.springframework.context.annotation.Configuration;
 /**
  * @author 冯铁城 [17615007230@163.com]
  * @date 2026-06-17 10:39:05
- * @describe 嵌入模型和向量存储配置
+ * @describe 基础配置：嵌入模型、向量存储
  */
 @Slf4j
 @Configuration
 @RequiredArgsConstructor
 @EnableConfigurationProperties({ModelProperties.class, StoreProperties.class, GithubProperties.class})
-public class StoreAndModelConfig {
+public class BaseConfig {
 
     private final ModelProperties modelProperties;
 
