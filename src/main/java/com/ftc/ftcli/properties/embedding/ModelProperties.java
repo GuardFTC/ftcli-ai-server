@@ -10,7 +10,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  */
 @Data
 @ConfigurationProperties(prefix = "ai.embedding.model.zhipu")
-public class EmbeddingModelProperties {
+public class ModelProperties {
 
     /**
      * API Key

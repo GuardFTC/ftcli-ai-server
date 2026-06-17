@@ -1,4 +1,4 @@
-package com.ftc.ftcli.properties.rag;
+package com.ftc.ftcli.properties.embedding;
 
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -9,8 +9,8 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  * @describe RAG文档入库器配置属性类
  */
 @Data
-@ConfigurationProperties(prefix = "ai.rag.ingestor")
-public class RagIngestorProperties {
+@ConfigurationProperties(prefix = "ai.embedding.ingestor")
+public class IngestorProperties {
 
     /**
      * 文档切分最大段落大小(token)

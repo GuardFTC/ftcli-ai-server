@@ -10,7 +10,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  */
 @Data
 @ConfigurationProperties(prefix = "ai.embedding.github")
-public class EmbeddingGithubProperties {
+public class GithubProperties {
 
     /**
      * GitHub Token

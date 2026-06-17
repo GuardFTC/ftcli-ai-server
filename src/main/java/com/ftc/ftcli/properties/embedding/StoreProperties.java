@@ -10,7 +10,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  */
 @Data
 @ConfigurationProperties(prefix = "ai.embedding.store.chroma")
-public class EmbeddingStoreProperties {
+public class StoreProperties {
 
     /**
      * Chroma服务URL

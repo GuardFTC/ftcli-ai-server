@@ -1,10 +1,9 @@
-package com.ftc.ftcli.config.ai;
+package com.ftc.ftcli.config.ai.embedding;
 
-import com.ftc.ftcli.properties.embedding.EmbeddingGithubProperties;
-import com.ftc.ftcli.properties.embedding.EmbeddingModelProperties;
-import com.ftc.ftcli.properties.embedding.EmbeddingStoreProperties;
+import com.ftc.ftcli.properties.embedding.GithubProperties;
+import com.ftc.ftcli.properties.embedding.ModelProperties;
+import com.ftc.ftcli.properties.embedding.StoreProperties;
 import dev.langchain4j.community.model.zhipu.ZhipuAiEmbeddingModel;
-import dev.langchain4j.data.document.loader.github.GitHubDocumentLoader;
 import dev.langchain4j.data.segment.TextSegment;
 import dev.langchain4j.model.embedding.EmbeddingModel;
 import dev.langchain4j.store.embedding.EmbeddingStore;
@@ -18,20 +17,18 @@ import org.springframework.context.annotation.Configuration;
 
 /**
  * @author 冯铁城 [17615007230@163.com]
- * @date 2026-06-03 10:35:05
- * @describe AI向量嵌入配置
+ * @date 2026-06-17 10:39:05
+ * @describe 嵌入模型和向量存储配置
  */
 @Slf4j
 @Configuration
 @RequiredArgsConstructor
-@EnableConfigurationProperties({EmbeddingModelProperties.class, EmbeddingStoreProperties.class, EmbeddingGithubProperties.class})
-public class EmbeddingConfig {
+@EnableConfigurationProperties({ModelProperties.class, StoreProperties.class, GithubProperties.class})
+public class StoreAndModelConfig {
 
-    private final EmbeddingModelProperties modelProperties;
+    private final ModelProperties modelProperties;
 
-    private final EmbeddingStoreProperties storeProperties;
-
-    private final EmbeddingGithubProperties githubProperties;
+    private final StoreProperties storeProperties;
 
     @Bean
     public EmbeddingModel embeddingModel() {
@@ -51,13 +48,6 @@ public class EmbeddingConfig {
                 .collectionName(storeProperties.getCollection())
                 .logRequests(false)
                 .logResponses(false)
-                .build();
-    }
-
-    @Bean
-    public GitHubDocumentLoader githubDocumentLoader() {
-        return GitHubDocumentLoader.builder()
-                .gitHubToken(githubProperties.getToken())
                 .build();
     }
 }

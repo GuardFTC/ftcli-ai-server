@@ -1,4 +1,4 @@
-package com.ftc.ftcli.config.ai;
+package com.ftc.ftcli.config.ai.base;
 
 import com.ftc.ftcli.common.util.ai.AiTraceLog;
 import dev.langchain4j.model.chat.listener.ChatModelErrorContext;

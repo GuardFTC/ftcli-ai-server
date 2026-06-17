@@ -63,11 +63,11 @@ ai:
         tenant: langchain4j
         database: langchain4j_db
         collection: langchain4j_coll
-  rag:
     ingestor:
       max-segment-size: 1500
       overlap: 200
       token-estimator-model: gpt-4o
+  rag:
     web-search:
       max-results: 5
     content-retriever:

@@ -15,7 +15,7 @@ import com.ftc.ftcli.entity.embedding.EmbeddingFileUploadPayload;
 import com.ftc.ftcli.entity.embedding.EmbeddingFileUploadResult;
 import com.ftc.ftcli.entity.embedding.EmbeddingRecordEntity;
 import com.ftc.ftcli.infra.sqlite.EmbeddingRecordRepository;
-import com.ftc.ftcli.properties.embedding.EmbeddingStoreProperties;
+import com.ftc.ftcli.properties.embedding.StoreProperties;
 import com.ftc.ftcli.service.AIEmbeddingService;
 import dev.langchain4j.data.document.Document;
 import dev.langchain4j.data.segment.TextSegment;
@@ -49,7 +49,7 @@ public class AIEmbeddingServiceImpl implements AIEmbeddingService {
 
     private final EmbeddingRecordRepository embeddingRecordRepository;
 
-    private final EmbeddingStoreProperties chromaProperties;
+    private final StoreProperties chromaProperties;
 
     @Override
     public List<EmbeddingRecordEntity> getDocs() {
