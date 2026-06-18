@@ -52,7 +52,7 @@
 
 - 支持 **本地文件/目录**、**URL**、**GitHub 文件链接** 三种文档来源
 - 支持 Markdown、PDF、YAML、TXT、HTML（含 Netscape 书签格式）格式
-- 文档自动切分（1500 tokens / 200 overlap）、向量化后写入 Chroma
+- 文档自动切分（2000 tokens / 200 overlap）、向量化后写入 Chroma
 - 基于文件名 MD5 去重 + 内容 MD5 变更检测，自动增量更新
 - 向量写入成功后才更新 SQLite 记录，失败可重试自愈
 - 删除文档时同步清理 Chroma 中对应向量
@@ -106,7 +106,7 @@
 ```
 ┌───────────────────────────────────────────────────────────┐
 │                  CLI 客户端 / 静态页面                      │
-│     (go-ftc-console / docs.html / tools.html / skills.html)│
+│     (ftcli / docs.html / tools.html / skills.html)│
 └──────────────────────────┬────────────────────────────────┘
                            │ HTTP REST / SSE
 ┌──────────────────────────▼────────────────────────────────┐
@@ -180,7 +180,7 @@ mvnw.cmd spring-boot:run
 
 ```bash
 mvnw.cmd clean package -DskipTests
-java -jar target/ftcli-0.0.1-SNAPSHOT.jar
+java -jar target/ftcli-ai-server-0.0.1-SNAPSHOT.jar
 ```
 
 ### 3. 验证
@@ -225,11 +225,11 @@ ai:
         tenant: langchain4j
         database: langchain4j_db
         collection: langchain4j_coll
-  rag:
     ingestor:
-      max-segment-size: 1500       # 文档切分最大段落（token）
+      max-segment-size: 2000       # 文档切分最大段落（token）
       overlap: 200                 # 切分重叠（token）
       token-estimator-model: gpt-4o
+  rag:
     web-search:
       max-results: 5               # Tavily 最大搜索结果数
     content-retriever:
@@ -238,6 +238,7 @@ ai:
     rerank:
       model: jina-reranker-v3      # Rerank 模型
       max-results: 3               # Rerank 后保留结果数
+      min-score: 0.08              # Rerank 最小分数
 ```
 
 SQLite 数据库在首次启动时由 `SqliteInitializer` 自动建表并初始化内置工具数据。
@@ -409,7 +410,7 @@ ftcli-ai-server/
 ├── pom.xml
 └── src/main/
     ├── java/com/ftc/ftcli/
-    │   ├── FtcliApplication.java          # 启动类
+    │   ├── FtcliAiServerApplication.java          # 启动类
     │   │
     │   ├── controller/                    # REST 控制器
     │   │   ├── AIChatController           # 聊天（同步/流式）
@@ -462,9 +463,17 @@ ftcli-ai-server/
     │   │
     │   ├── config/
     │   │   ├── ai/
-    │   │   │   ├── RagConfig              # RAG 全链路配置（检索/路由/重排/注入）
-    │   │   │   ├── EmbeddingConfig        # Embedding 模型 + Chroma + GitHub Loader
-    │   │   │   └── AIRequestLogConfig     # LLM 请求响应追踪监听器
+    │   │   │   ├── base/
+    │   │   │   │   └── AIRequestLogConfig     # LLM 请求响应追踪监听器
+    │   │   │   ├── embedding/
+    │   │   │   │   ├── BaseConfig             # Embedding 模型 + Chroma 基础配置
+    │   │   │   │   ├── DocLoaderConfig        # GitHub 文档加载器配置
+    │   │   │   │   └── IngestorConfig         # 文档切分入库器配置
+    │   │   │   └── rag/
+    │   │   │       ├── ContentAggregatorConfig # Rerank 内容聚合配置
+    │   │   │       ├── ContentInjectorConfig   # 内容注入配置
+    │   │   │       ├── QueryRouterConfig       # 查询路由配置
+    │   │   │       └── QueryTransformerConfig  # 查询压缩配置
     │   │   └── sqlite/
     │   │       ├── SqliteConfiguration    # 数据源配置（确保目录存在）
     │   │       └── SqliteInitializer      # 启动时自动建表+初始化数据
@@ -493,12 +502,12 @@ ftcli-ai-server/
     │   │   ├── chat/
     │   │   │   └── ChatMemoryProperties
     │   │   ├── embedding/
-    │   │   │   ├── EmbeddingModelProperties
-    │   │   │   ├── EmbeddingStoreProperties
-    │   │   │   └── EmbeddingGithubProperties
+    │   │   │   ├── ModelProperties        # Embedding 模型配置
+    │   │   │   ├── StoreProperties        # Chroma 向量库配置
+    │   │   │   ├── GithubProperties       # GitHub 文档加载配置
+    │   │   │   └── IngestorProperties     # 文档切分入库器配置
     │   │   └── rag/
     │   │       ├── ContentRetrieverProperties
-    │   │       ├── RagIngestorProperties
     │   │       ├── RerankProperties
     │   │       └── WebSearchProperties
     │   │
@@ -506,6 +515,7 @@ ftcli-ai-server/
     │       ├── enums/
     │       │   ├── doc/
     │       │   │   ├── DocLoaderEnum       # 文档加载器类型
+    │       │   │   ├── DocIngestorTypeEnum # 文档切分器类型
     │       │   │   ├── DocMetaDataKeyEnum  # 文档元数据 Key
     │       │   │   └── DocParserTypeEnum   # 文档解析器类型
     │       │   └── result/
@@ -522,10 +532,17 @@ ftcli-ai-server/
     │           │   │       ├── FileSystemDocLoader
     │           │   │       ├── UrlDocLoader
     │           │   │       └── GithubDocLoader
-    │           │   └── doc_parser/
-    │           │       ├── DocParserFactory # 解析器工厂
+    │           │   ├── doc_parser/
+    │           │   │   ├── DocParserFactory # 解析器工厂
+    │           │   │   └── impl/
+    │           │   │       ├── HtmlDocumentParser   # HTML/书签解析
+    │           │   │       └── MarkdownDocumentParser # Markdown解析
+    │           │   └── ingestor/
+    │           │       ├── IIngestor        # 切分器接口
+    │           │       ├── DocIngestorFactory # 切分器工厂
     │           │       └── impl/
-    │           │           └── HtmlDocumentParser  # HTML/书签解析
+    │           │           ├── BookmarkIngestor   # 书签切分器
+    │           │           └── MarkdownIngestor   # Markdown语义切分器
     │           └── github/
     │               ├── GitHubUrlParser     # GitHub URL 解析
     │               └── GitHubUrlInfo       # GitHub URL 信息
