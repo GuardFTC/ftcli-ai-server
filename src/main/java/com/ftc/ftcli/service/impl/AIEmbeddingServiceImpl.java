@@ -147,26 +147,49 @@ public class AIEmbeddingServiceImpl implements AIEmbeddingService {
     }
 
     @Override
-    public Map<String, Object> getChunks(Long id, int page, int size) {
+    public List<Map<String, Object>> getChunks(Long id, int offset, int size) {
 
         //1.获取集合ID
         String collectionId = chromaCollectionRepository.getCollectionId();
         if (StrUtil.isBlank(collectionId)) {
-            return Map.of("total", 0, "chunks", List.of());
+            return List.of();
         }
 
         //2.查询文档记录
         EmbeddingRecordEntity docRecord = embeddingRecordRepository.findById(id);
         if (null == docRecord) {
-            log.error("[Chroma] 获取文档片段 文档不存在:[{}]", id);
-            return Map.of("total", 0, "chunks", List.of());
+            log.error("[AI] 获取文档片段 文档不存在:[{}]", id);
+            return List.of();
         }
 
         //3.获取文件名MD5
         String fileNameMd5 = docRecord.getFileNameMd5();
 
         //4.获取文档片段，返回结果
-        return chromaRecordRepository.getChunks(collectionId, fileNameMd5, page, size);
+        return chromaRecordRepository.getChunks(collectionId, fileNameMd5, offset, size);
+    }
+
+    @Override
+    public int getChunkCount(Long id) {
+
+        //1.获取集合ID
+        String collectionId = chromaCollectionRepository.getCollectionId();
+        if (StrUtil.isBlank(collectionId)) {
+            return 0;
+        }
+
+        //2.查询文档记录
+        EmbeddingRecordEntity docRecord = embeddingRecordRepository.findById(id);
+        if (null == docRecord) {
+            log.error("[AI] 获取文档片段数 文档不存在:[{}]", id);
+            return 0;
+        }
+
+        //3.获取文件名MD5
+        String fileNameMd5 = docRecord.getFileNameMd5();
+
+        //4.查询片段数，返回
+        return chromaRecordRepository.getChunkCount(collectionId, fileNameMd5);
     }
 
     /**

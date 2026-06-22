@@ -30,23 +30,17 @@ public class RecordRepository {
      *
      * @param collectionId 集合ID
      * @param fileNameMd5  文件名MD5
-     * @param page         页码(从1开始)
+     * @param offset       偏移量
      * @param size         每页条数
-     * @return 文档片段分页结果
+     * @return 文档片段列表
      */
-    public Map<String, Object> getChunks(String collectionId, String fileNameMd5, int page, int size) {
+    public List<Map<String, Object>> getChunks(String collectionId, String fileNameMd5, int offset, int size) {
 
         //1.获取查询集合向量记录URL
         String getUrl = urlBuilder.getUrl(collectionId);
         try {
 
-            //2.先查询该文档的总片段数
-            int total = getChunkCount(collectionId, fileNameMd5);
-
-            //3.计算分页偏移量
-            int offset = (page - 1) * size;
-
-            //4.构建Chroma查询请求体
+            //2.构建Chroma查询请求体
             JSONObject requestBody = new JSONObject();
             requestBody.put("include", List.of("documents", "metadatas"));
             requestBody.put("limit", size);
@@ -55,16 +49,16 @@ public class RecordRepository {
             where.put("file_name_md5", fileNameMd5);
             requestBody.put("where", where);
 
-            //5.发起请求
+            //3.发起请求
             String resp = HttpUtil.post(getUrl, requestBody.toJSONString());
             JSONObject result = JSON.parseObject(resp);
 
-            //6.解析片段列表
+            //4.解析片段列表
             JSONArray ids = result.getJSONArray("ids");
             JSONArray documents = result.getJSONArray("documents");
             JSONArray metadatas = result.getJSONArray("metadatas");
 
-            //7.组装片段数据
+            //5.组装片段数据
             List<Map<String, Object>> chunks = new ArrayList<>();
             for (int i = 0; i < ids.size(); i++) {
                 Map<String, Object> chunk = new LinkedHashMap<>();
@@ -74,11 +68,11 @@ public class RecordRepository {
                 chunks.add(chunk);
             }
 
-            //8.返回分页结果
-            return Map.of("total", total, "chunks", chunks);
+            //6.返回片段列表
+            return chunks;
         } catch (Exception e) {
             log.error("[Chroma] 获取文档片段 失败 文档名MD5:[{}]", fileNameMd5, e);
-            return Map.of("total", 0, "chunks", List.of());
+            return List.of();
         }
     }
 

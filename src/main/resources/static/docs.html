@@ -96,11 +96,14 @@
         .chunk-meta-tag { font-size: 11px; background: #f0f5ff; color: #1890ff; padding: 2px 8px; border-radius: 3px; }
         .chunks-pagination { display: flex; justify-content: space-between; align-items: center; padding-top: 14px; border-top: 1px solid #f0f0f0; margin-top: 12px; }
         .chunks-page-info { font-size: 12px; color: #999; }
-        .chunks-page-btns { display: flex; gap: 6px; }
+        .chunks-page-btns { display: flex; gap: 6px; align-items: center; }
         .chunks-page-btns button { padding: 4px 10px; border: 1px solid #d9d9d9; border-radius: 4px; cursor: pointer; font-size: 12px; background: #fff; }
         .chunks-page-btns button:hover { border-color: #1890ff; color: #1890ff; }
         .chunks-page-btns button:disabled { opacity: 0.4; cursor: not-allowed; }
+        .chunks-page-input { width: 48px; padding: 3px 6px; border: 1px solid #d9d9d9; border-radius: 4px; font-size: 12px; text-align: center; }
+        .chunks-page-input:focus { outline: none; border-color: #1890ff; }
         .chunks-loading { text-align: center; padding: 40px; color: #999; font-size: 14px; }
+        .chunk-count-tag { font-size: 12px; background: #e6f7ff; color: #1890ff; padding: 2px 8px; border-radius: 3px; font-weight: 500; }
     </style>
 </head>
 <body>
@@ -173,6 +176,9 @@
             <div class="chunks-page-info" id="chunksPageInfo"></div>
             <div class="chunks-page-btns">
                 <button onclick="chunksGoPage(chunksCurrentPage-1)" id="chunksPrevBtn">上一页</button>
+                <span style="font-size:12px;color:#666;">第</span>
+                <input type="number" class="chunks-page-input" id="chunksPageInput" min="1" onkeydown="if(event.key==='Enter')chunksJumpPage()">
+                <span style="font-size:12px;color:#666;">页</span>
                 <button onclick="chunksGoPage(chunksCurrentPage+1)" id="chunksNextBtn">下一页</button>
             </div>
         </div>
@@ -317,6 +323,10 @@ function renderDocCard(doc) {
                         <div class="label">内容 MD5</div>
                         <div class="value" style="font-family:monospace;font-size:12px;">${doc.fileContentMd5 || '-'}</div>
                     </div>
+                    <div class="detail-item">
+                        <div class="label">向量片段数</div>
+                        <div class="value" id="chunkCount_${doc.id}">加载中...</div>
+                    </div>
                 </div>
                 <div class="doc-actions">
                     <button class="btn-chunks" onclick="event.stopPropagation(); openChunksModal(${doc.id}, '${doc.fileName}')">查看片段</button>
@@ -375,7 +385,17 @@ function goPage(page) {
 // 展开/收起详情
 function toggleDocDetail(card) {
     const detail = card.querySelector('.doc-detail');
+    const wasExpanded = detail.classList.contains('expanded');
     detail.classList.toggle('expanded');
+
+    // 展开时加载片段数
+    if (!wasExpanded) {
+        const el = detail.querySelector('[id^="chunkCount_"]');
+        if (el && el.textContent === '加载中...') {
+            const docId = el.id.replace('chunkCount_', '');
+            loadChunkCount(docId);
+        }
+    }
 }
 
 // 删除文档 - 弹出确认框
@@ -432,23 +452,62 @@ let chunksTotal = 0;
 let chunksDocId = null;
 let chunksDocName = '';
 
+// 片段数缓存 {docId: count}
+const chunkCountCache = {};
+
 // 忽略的元数据Key（文档级信息，已在外层展示）
 const IGNORED_META_KEYS = new Set([
     'file_name', 'file_name_md5', 'file_content_md5',
     'absolute_directory_path', 'full_path'
 ]);
 
+// 加载片段数（展开文档时触发）
+async function loadChunkCount(docId) {
+    try {
+        const resp = await fetch(API_BASE + '/' + docId + '/chunks/count');
+        const result = await resp.json();
+        const count = result.data != null ? result.data : 0;
+        chunkCountCache[docId] = count;
+        const el = document.getElementById('chunkCount_' + docId);
+        if (el) el.textContent = count;
+    } catch (e) {
+        const el = document.getElementById('chunkCount_' + docId);
+        if (el) el.textContent = '查询失败';
+    }
+}
+
 // 打开片段弹窗
 function openChunksModal(docId, fileName) {
     chunksDocId = docId;
     chunksDocName = fileName;
     chunksCurrentPage = 1;
+
+    // 使用缓存的total，没有则先查
+    chunksTotal = chunkCountCache[docId] || 0;
+
     document.getElementById('chunksTitle').textContent = '文档片段';
     document.getElementById('chunksSubtitle').textContent = fileName;
     document.getElementById('chunksBody').innerHTML = '<div class="chunks-loading">加载中...</div>';
     document.getElementById('chunksPagination').style.display = 'none';
     document.getElementById('chunksModal').classList.add('active');
-    loadChunks();
+
+    if (chunksTotal > 0) {
+        loadChunks();
+    } else {
+        // 没有缓存，先查count
+        fetch(API_BASE + '/' + docId + '/chunks/count')
+            .then(r => r.json())
+            .then(result => {
+                chunksTotal = result.data || 0;
+                chunkCountCache[docId] = chunksTotal;
+                const el = document.getElementById('chunkCount_' + docId);
+                if (el) el.textContent = '片段数: ' + chunksTotal;
+                loadChunks();
+            })
+            .catch(e => {
+                document.getElementById('chunksBody').innerHTML = '<div class="chunks-loading">加载失败: ' + e.message + '</div>';
+            });
+    }
 }
 
 // 关闭片段弹窗
@@ -457,14 +516,13 @@ function closeChunksModal() {
     chunksDocId = null;
 }
 
-// 加载片段数据
+// 加载片段数据（使用offset）
 async function loadChunks() {
     try {
-        const resp = await fetch(API_BASE + '/' + chunksDocId + '/chunks?page=' + chunksCurrentPage + '&size=' + CHUNKS_PAGE_SIZE);
+        const offset = (chunksCurrentPage - 1) * CHUNKS_PAGE_SIZE;
+        const resp = await fetch(API_BASE + '/' + chunksDocId + '/chunks?offset=' + offset + '&size=' + CHUNKS_PAGE_SIZE);
         const result = await resp.json();
-        const data = result.data || {};
-        chunksTotal = data.total || 0;
-        const chunks = data.chunks || [];
+        const chunks = result.data || [];
         renderChunks(chunks);
     } catch (e) {
         document.getElementById('chunksBody').innerHTML = '<div class="chunks-loading">加载失败: ' + e.message + '</div>';
@@ -473,7 +531,7 @@ async function loadChunks() {
 
 // 渲染片段列表
 function renderChunks(chunks) {
-    if (chunks.length === 0) {
+    if (chunks.length === 0 && chunksTotal === 0) {
         document.getElementById('chunksBody').innerHTML = '<div class="chunks-loading">暂无片段数据</div>';
         document.getElementById('chunksPagination').style.display = 'none';
         return;
@@ -521,18 +579,13 @@ function renderChunkMeta(metadata) {
 // 渲染片段分页
 function renderChunksPagination() {
     const totalPages = Math.max(1, Math.ceil(chunksTotal / CHUNKS_PAGE_SIZE));
-    if (totalPages <= 1 && chunksTotal <= CHUNKS_PAGE_SIZE) {
-        document.getElementById('chunksPagination').style.display = chunksTotal > 0 ? 'flex' : 'none';
-        document.getElementById('chunksPageInfo').textContent = '共 ' + chunksTotal + ' 条';
-        document.getElementById('chunksPrevBtn').disabled = true;
-        document.getElementById('chunksNextBtn').disabled = true;
-        return;
-    }
 
     document.getElementById('chunksPagination').style.display = 'flex';
     document.getElementById('chunksPageInfo').textContent = '第 ' + chunksCurrentPage + '/' + totalPages + ' 页，共 ' + chunksTotal + ' 条';
     document.getElementById('chunksPrevBtn').disabled = chunksCurrentPage <= 1;
     document.getElementById('chunksNextBtn').disabled = chunksCurrentPage >= totalPages;
+    document.getElementById('chunksPageInput').value = chunksCurrentPage;
+    document.getElementById('chunksPageInput').max = totalPages;
 }
 
 // 片段翻页
@@ -542,6 +595,18 @@ function chunksGoPage(page) {
     chunksCurrentPage = page;
     document.getElementById('chunksBody').innerHTML = '<div class="chunks-loading">加载中...</div>';
     loadChunks();
+}
+
+// 片段跳转页码
+function chunksJumpPage() {
+    const input = document.getElementById('chunksPageInput');
+    const page = parseInt(input.value);
+    const totalPages = Math.max(1, Math.ceil(chunksTotal / CHUNKS_PAGE_SIZE));
+    if (isNaN(page) || page < 1 || page > totalPages) {
+        input.value = chunksCurrentPage;
+        return;
+    }
+    chunksGoPage(page);
 }
 
 // 展开/收起片段详情

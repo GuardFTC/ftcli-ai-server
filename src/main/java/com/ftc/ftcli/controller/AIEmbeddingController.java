@@ -83,16 +83,28 @@ public class AIEmbeddingController {
 
     @GetMapping("docs/{id}/chunks")
     @Operation(summary = "查询文档片段")
-    public RestfulResult<Map<String, Object>> getChunks(
+    public RestfulResult<List<Map<String, Object>>> getChunks(
             @PathVariable Long id,
-            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "0") int offset,
             @RequestParam(defaultValue = "10") int size) {
 
         //1.查询文档片段
-        Map<String, Object> chunks = aiEmbeddingService.getChunks(id, page, size);
-        log.info("[AI] 查询文档片段 文档ID:[{}] page:[{}] size:[{}] total:[{}]", id, page, size, chunks.get("total"));
+        List<Map<String, Object>> chunks = aiEmbeddingService.getChunks(id, offset, size);
+        log.info("[AI] 查询文档片段 文档ID:[{}] offset:[{}] size:[{}] 返回数量:[{}]", id, offset, size, chunks.size());
 
         //2.返回
         return RestfulResult.Success.getOrUpdateData(chunks);
+    }
+
+    @GetMapping("docs/{id}/chunks/count")
+    @Operation(summary = "查询文档片段数")
+    public RestfulResult<Integer> getChunkCount(@PathVariable Long id) {
+
+        //1.查询文档片段数
+        int count = aiEmbeddingService.getChunkCount(id);
+        log.info("[AI] 查询文档片段数 文档ID:[{}] 出参:[{}]", id, count);
+
+        //2.返回
+        return RestfulResult.Success.getOrUpdateData(count);
     }
 }

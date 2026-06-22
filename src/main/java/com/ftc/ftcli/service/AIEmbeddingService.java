@@ -47,9 +47,17 @@ public interface AIEmbeddingService {
      * 获取文档片段列表
      *
      * @param id     文档ID
-     * @param page   页码(从1开始)
+     * @param offset 偏移量
      * @param size   每页条数
-     * @return 文档片段分页结果
+     * @return 文档片段列表
      */
-    Map<String, Object> getChunks(Long id, int page, int size);
+    List<Map<String, Object>> getChunks(Long id, int offset, int size);
+
+    /**
+     * 获取文档片段总数
+     *
+     * @param id 文档ID
+     * @return 片段总数
+     */
+    int getChunkCount(Long id);
 }
