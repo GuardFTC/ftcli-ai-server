@@ -142,13 +142,31 @@ public class AIEmbeddingServiceImpl implements AIEmbeddingService {
             return 0;
         }
 
-        //2.查询向量数量
+        //2.查询向量数量，返回结果
         return chromaCollectionRepository.getVectorCount(collectionId);
     }
 
     @Override
     public Map<String, Object> getChunks(Long id, int page, int size) {
-        return chromaRecordRepository.getChunks(id, page, size);
+
+        //1.获取集合ID
+        String collectionId = chromaCollectionRepository.getCollectionId();
+        if (StrUtil.isBlank(collectionId)) {
+            return Map.of("total", 0, "chunks", List.of());
+        }
+
+        //2.查询文档记录
+        EmbeddingRecordEntity docRecord = embeddingRecordRepository.findById(id);
+        if (null == docRecord) {
+            log.error("[Chroma] 获取文档片段 文档不存在:[{}]", id);
+            return Map.of("total", 0, "chunks", List.of());
+        }
+
+        //3.获取文件名MD5
+        String fileNameMd5 = docRecord.getFileNameMd5();
+
+        //4.获取文档片段，返回结果
+        return chromaRecordRepository.getChunks(collectionId, fileNameMd5, page, size);
     }
 
     /**
