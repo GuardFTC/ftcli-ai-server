@@ -41,7 +41,7 @@ public class RecordRepository {
         try {
 
             //2.先查询该文档的总片段数
-            int total = getChunkCount(getUrl, fileNameMd5);
+            int total = getChunkCount(collectionId, fileNameMd5);
 
             //3.计算分页偏移量
             int offset = (page - 1) * size;
@@ -85,24 +85,27 @@ public class RecordRepository {
     /**
      * 获取指定文档的片段总数
      *
-     * @param getUrl      查询集合向量记录URL
-     * @param fileNameMd5 文件名MD5
+     * @param collectionId 集合ID
+     * @param fileNameMd5  文件名MD5
      * @return 片段总数
      */
-    private int getChunkCount(String getUrl, String fileNameMd5) {
+    public int getChunkCount(String collectionId, String fileNameMd5) {
 
-        //1.构建计数请求体（不限制数量，只取ID用于计数）
+        //1.获取查询集合向量记录URL
+        String getUrl = urlBuilder.getUrl(collectionId);
+
+        //2.构建计数请求体（不限制数量，只取ID用于计数）
         JSONObject requestBody = new JSONObject();
         requestBody.put("include", List.of());
         JSONObject where = new JSONObject();
         where.put("file_name_md5", fileNameMd5);
         requestBody.put("where", where);
 
-        //2.发起请求
+        //3.发起请求
         String resp = HttpUtil.post(getUrl, requestBody.toJSONString());
         JSONObject result = JSON.parseObject(resp);
 
-        //3.解析ID数组长度作为总数
+        //4.解析ID数组长度作为总数
         JSONArray ids = result.getJSONArray("ids");
         return ids != null ? ids.size() : 0;
     }
