@@ -31,7 +31,7 @@ public class CollectionRepository {
     public String getCollectionId() {
 
         //1.获取查询集合列表URL
-        String collectionsUrl = urlBuilder.collectionsUrl();
+        String collectionsUrl = urlBuilder.buildCollectionsUrl();
         try {
 
             //2.查询集合列表
@@ -70,7 +70,7 @@ public class CollectionRepository {
     public int getVectorCount(String collectionId) {
 
         //1.查询集合记录数URL
-        String recordsCountUrl = urlBuilder.recordsCountUrl(collectionId);
+        String recordsCountUrl = urlBuilder.buildRecordsCountUrl(collectionId);
         try {
 
             //2.查询集合记录数

@@ -37,7 +37,7 @@ public class RecordRepository {
     public List<Map<String, Object>> getChunks(String collectionId, String fileNameMd5, int offset, int size) {
 
         //1.获取查询集合向量记录URL
-        String getUrl = urlBuilder.getUrl(collectionId);
+        String getUrl = urlBuilder.buildGetUrl(collectionId);
         try {
 
             //2.构建Chroma查询请求体
@@ -86,7 +86,7 @@ public class RecordRepository {
     public int getChunkCount(String collectionId, String fileNameMd5) {
 
         //1.获取查询集合向量记录URL
-        String getUrl = urlBuilder.getUrl(collectionId);
+        String getUrl = urlBuilder.buildGetUrl(collectionId);
 
         //2.构建计数请求体（不限制数量，只取ID用于计数）
         JSONObject requestBody = new JSONObject();

@@ -20,7 +20,7 @@ public class ChromaUrlBuilder {
      *
      * @return 查询集合列表URL
      */
-    public String collectionsUrl() {
+    public String buildCollectionsUrl() {
         return chromaProperties.getUrl()
                 + "/api/v2/tenants/"
                 + chromaProperties.getTenant()
@@ -35,7 +35,7 @@ public class ChromaUrlBuilder {
      * @param collectionId 集合ID
      * @return 查询集合记录数URL
      */
-    public String recordsCountUrl(String collectionId) {
+    public String buildRecordsCountUrl(String collectionId) {
         return chromaProperties.getUrl()
                 + "/api/v2/tenants/"
                 + chromaProperties.getTenant()
@@ -52,7 +52,7 @@ public class ChromaUrlBuilder {
      * @param collectionId 集合ID
      * @return 查询集合向量记录URL
      */
-    public String getUrl(String collectionId) {
+    public String buildGetUrl(String collectionId) {
         return chromaProperties.getUrl()
                 + "/api/v2/tenants/"
                 + chromaProperties.getTenant()
