@@ -4,7 +4,7 @@ import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.io.resource.ResourceUtil;
 import com.ftc.ftcli.ai.store.SqliteChatMemoryStore;
 import com.ftc.ftcli.properties.chat.ChatMemoryProperties;
-import com.ftc.ftcli.service.AISkillService;
+import com.ftc.ftcli.service.ai.AISkillService;
 import dev.langchain4j.memory.chat.TokenWindowChatMemory;
 import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.model.chat.StreamingChatModel;

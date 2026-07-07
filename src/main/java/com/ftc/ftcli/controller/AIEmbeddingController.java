@@ -1,11 +1,11 @@
 package com.ftc.ftcli.controller;
 
-import com.ftc.ftcli.entity.embedding.EmbeddingFileUploadPayload;
-import com.ftc.ftcli.entity.embedding.EmbeddingFileUploadResult;
+import com.ftc.ftcli.entity.payload.EmbeddingFileUploadPayload;
+import com.ftc.ftcli.entity.result.EmbeddingFileUploadResult;
 import com.ftc.ftcli.entity.embedding.EmbeddingRecordEntity;
 import com.ftc.ftcli.entity.result.RestfulResult;
-import com.ftc.ftcli.service.AIEmbeddingService;
-import com.ftc.ftcli.service.ChromaService;
+import com.ftc.ftcli.service.embedding.EmbeddingService;
+import com.ftc.ftcli.service.base.ChromaService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -27,7 +27,7 @@ import java.util.Map;
 @RequestMapping("/api/rest/v1/ai/embedding")
 public class AIEmbeddingController {
 
-    private final AIEmbeddingService aiEmbeddingService;
+    private final EmbeddingService embeddingService;
 
     private final ChromaService chromaService;
 
@@ -36,7 +36,7 @@ public class AIEmbeddingController {
     public RestfulResult<List<EmbeddingRecordEntity>> getDocs() {
 
         //1.查询文档
-        List<EmbeddingRecordEntity> docs = aiEmbeddingService.getDocs();
+        List<EmbeddingRecordEntity> docs = embeddingService.getDocs();
         log.info("[AI] 查询文档 出参:[{}]", docs);
 
         //3.返回
@@ -51,7 +51,7 @@ public class AIEmbeddingController {
         log.info("[AI] 新增文档 入参:[{}]", payload);
 
         //2.新增文档
-        EmbeddingFileUploadResult fileUploadResult = aiEmbeddingService.upload(payload);
+        EmbeddingFileUploadResult fileUploadResult = embeddingService.upload(payload);
         log.info("[AI] 新增文档 出参:[{}]", fileUploadResult);
 
         //3.返回
@@ -66,7 +66,7 @@ public class AIEmbeddingController {
         log.info("[AI] 删除文档 入参:[{}]", id);
 
         //2.删除文档
-        aiEmbeddingService.remove(id);
+        embeddingService.remove(id);
 
         //3.返回
         return RestfulResult.Success.removeData();

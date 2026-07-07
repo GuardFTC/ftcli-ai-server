@@ -1,4 +1,4 @@
-package com.ftc.ftcli.entity.embedding;
+package com.ftc.ftcli.entity.payload;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;

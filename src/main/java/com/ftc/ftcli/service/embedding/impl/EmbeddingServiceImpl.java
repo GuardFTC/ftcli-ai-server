@@ -1,4 +1,4 @@
-package com.ftc.ftcli.service.impl;
+package com.ftc.ftcli.service.embedding.impl;
 
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.StrUtil;
@@ -10,13 +10,13 @@ import com.ftc.ftcli.common.util.doc.SegmentUtil;
 import com.ftc.ftcli.common.util.doc.doc_loader.DocLoaderFactory;
 import com.ftc.ftcli.common.util.doc.doc_loader.IDocLoader;
 import com.ftc.ftcli.entity.embedding.EmbeddingChunkRecordEntity;
-import com.ftc.ftcli.entity.embedding.EmbeddingFileUploadPayload;
-import com.ftc.ftcli.entity.embedding.EmbeddingFileUploadResult;
+import com.ftc.ftcli.entity.payload.EmbeddingFileUploadPayload;
+import com.ftc.ftcli.entity.result.EmbeddingFileUploadResult;
 import com.ftc.ftcli.entity.embedding.EmbeddingRecordEntity;
 import com.ftc.ftcli.infra.sqlite.repository.EmbeddingChunkRecordRepository;
 import com.ftc.ftcli.infra.sqlite.repository.EmbeddingRecordRepository;
 import com.ftc.ftcli.infra.sqlite.store.EmbeddingRecordStore;
-import com.ftc.ftcli.service.AIEmbeddingService;
+import com.ftc.ftcli.service.embedding.EmbeddingService;
 import dev.langchain4j.data.document.Document;
 import dev.langchain4j.data.document.DocumentSplitter;
 import dev.langchain4j.data.embedding.Embedding;
@@ -45,7 +45,7 @@ import static dev.langchain4j.store.embedding.filter.MetadataFilterBuilder.metad
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class AIEmbeddingServiceImpl implements AIEmbeddingService {
+public class EmbeddingServiceImpl implements EmbeddingService {
 
     private final DocumentSplitter documentSplitter;
 

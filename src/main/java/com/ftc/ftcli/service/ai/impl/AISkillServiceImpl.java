@@ -1,4 +1,4 @@
-package com.ftc.ftcli.service.impl;
+package com.ftc.ftcli.service.ai.impl;
 
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.io.resource.ResourceUtil;
@@ -6,7 +6,7 @@ import cn.hutool.core.util.StrUtil;
 import com.ftc.ftcli.ai.service.AiServiceHolder;
 import com.ftc.ftcli.entity.skill.SkillEntity;
 import com.ftc.ftcli.infra.sqlite.repository.SkillRepository;
-import com.ftc.ftcli.service.AISkillService;
+import com.ftc.ftcli.service.ai.AISkillService;
 import dev.langchain4j.skills.Skill;
 import dev.langchain4j.skills.Skills;
 import lombok.extern.slf4j.Slf4j;

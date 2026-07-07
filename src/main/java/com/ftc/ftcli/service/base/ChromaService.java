@@ -1,4 +1,4 @@
-package com.ftc.ftcli.service;
+package com.ftc.ftcli.service.base;
 
 import java.util.List;
 import java.util.Map;

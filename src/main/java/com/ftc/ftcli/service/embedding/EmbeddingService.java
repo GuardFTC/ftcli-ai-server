@@ -1,7 +1,7 @@
-package com.ftc.ftcli.service;
+package com.ftc.ftcli.service.embedding;
 
-import com.ftc.ftcli.entity.embedding.EmbeddingFileUploadPayload;
-import com.ftc.ftcli.entity.embedding.EmbeddingFileUploadResult;
+import com.ftc.ftcli.entity.payload.EmbeddingFileUploadPayload;
+import com.ftc.ftcli.entity.result.EmbeddingFileUploadResult;
 import com.ftc.ftcli.entity.embedding.EmbeddingRecordEntity;
 
 import java.util.List;
@@ -11,7 +11,7 @@ import java.util.List;
  * @date 2026-06-02 19:32:11
  * @describe AI向量嵌入服务
  */
-public interface AIEmbeddingService {
+public interface EmbeddingService {
 
     /**
      * 获取文档列表

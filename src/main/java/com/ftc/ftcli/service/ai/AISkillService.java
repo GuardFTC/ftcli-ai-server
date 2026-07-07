@@ -1,4 +1,4 @@
-package com.ftc.ftcli.service;
+package com.ftc.ftcli.service.ai;
 
 import com.ftc.ftcli.entity.skill.SkillEntity;
 import dev.langchain4j.skills.Skills;

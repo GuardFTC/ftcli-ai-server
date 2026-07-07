@@ -1,9 +1,9 @@
-package com.ftc.ftcli.service.impl;
+package com.ftc.ftcli.service.ai.impl;
 
 import com.ftc.ftcli.ai.tool.ToolRegistry;
 import com.ftc.ftcli.ai.tool.spec.ToolSpecEntity;
 import com.ftc.ftcli.infra.sqlite.repository.ToolSpecRepository;
-import com.ftc.ftcli.service.AIToolService;
+import com.ftc.ftcli.service.ai.AIToolService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
