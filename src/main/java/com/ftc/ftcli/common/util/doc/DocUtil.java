@@ -115,6 +115,16 @@ public class DocUtil {
     }
 
     /**
+     * 获取文档完整路径
+     *
+     * @param doc 文档
+     * @return 文档完整路径
+     */
+    public static String getFullPath(Document doc) {
+        return getStringFromMetadata(doc, DocMetaDataKeyEnum.FULL_PATH.getKey());
+    }
+
+    /**
      * 获取文件内容MD5
      *
      * @param doc 文档

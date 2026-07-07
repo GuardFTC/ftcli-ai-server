@@ -50,6 +50,24 @@ public class AIEmbeddingServiceImpl implements AIEmbeddingService {
     }
 
     @Override
+    public void remove(Long id) {
+
+        //1.查询文档记录
+        EmbeddingRecordEntity docRecord = embeddingRecordRepository.findById(id);
+        if (null == docRecord) {
+            log.error("[AI] 删除文档 文档不存在:[{}]", id);
+            return;
+        }
+
+        //2.删除向量数据库向量
+        Filter filter = metadataKey(DocMetaDataKeyEnum.FILE_NAME_MD5.getKey()).isEqualTo(docRecord.getFileNameMd5());
+        embeddingStore.removeAll(filter);
+
+        //3.删除文档记录
+        embeddingRecordRepository.deleteById(id);
+    }
+
+    @Override
     public EmbeddingFileUploadResult upload(EmbeddingFileUploadPayload payload) {
 
         //1.获取文档路径
@@ -104,24 +122,6 @@ public class AIEmbeddingServiceImpl implements AIEmbeddingService {
 
         //12.构建结果返回
         return new EmbeddingFileUploadResult(newFiles, updateFiles);
-    }
-
-    @Override
-    public void remove(Long id) {
-
-        //1.查询文档记录
-        EmbeddingRecordEntity docRecord = embeddingRecordRepository.findById(id);
-        if (null == docRecord) {
-            log.error("[AI] 删除文档 文档不存在:[{}]", id);
-            return;
-        }
-
-        //2.删除向量数据库向量
-        Filter filter = metadataKey(DocMetaDataKeyEnum.FILE_NAME_MD5.getKey()).isEqualTo(docRecord.getFileNameMd5());
-        embeddingStore.removeAll(filter);
-
-        //3.删除文档记录
-        embeddingRecordRepository.deleteById(id);
     }
 
     /**

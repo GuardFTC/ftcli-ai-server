@@ -21,17 +21,17 @@ public interface AIEmbeddingService {
     List<EmbeddingRecordEntity> getDocs();
 
     /**
+     * 删除文档
+     *
+     * @param id 文档ID
+     */
+    void remove(Long id);
+
+    /**
      * 上传文档
      *
      * @param payload 文档上传参数
      * @return 文档上传结果
      */
     EmbeddingFileUploadResult upload(EmbeddingFileUploadPayload payload);
-
-    /**
-     * 删除文档
-     *
-     * @param id 文档ID
-     */
-    void remove(Long id);
 }
