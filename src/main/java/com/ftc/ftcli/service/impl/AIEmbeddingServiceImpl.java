@@ -13,14 +13,18 @@ import com.ftc.ftcli.entity.embedding.EmbeddingRecordEntity;
 import com.ftc.ftcli.infra.sqlite.EmbeddingRecordRepository;
 import com.ftc.ftcli.service.AIEmbeddingService;
 import dev.langchain4j.data.document.Document;
+import dev.langchain4j.data.document.DocumentSplitter;
+import dev.langchain4j.data.embedding.Embedding;
 import dev.langchain4j.data.segment.TextSegment;
+import dev.langchain4j.model.embedding.EmbeddingModel;
+import dev.langchain4j.model.output.Response;
 import dev.langchain4j.store.embedding.EmbeddingStore;
-import dev.langchain4j.store.embedding.EmbeddingStoreIngestor;
 import dev.langchain4j.store.embedding.filter.Filter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -38,7 +42,9 @@ import static dev.langchain4j.store.embedding.filter.MetadataFilterBuilder.metad
 @RequiredArgsConstructor
 public class AIEmbeddingServiceImpl implements AIEmbeddingService {
 
-    private final EmbeddingStoreIngestor ingestor;
+    private final DocumentSplitter documentSplitter;
+
+    private final EmbeddingModel embeddingModel;
 
     private final EmbeddingStore<TextSegment> embeddingStore;
 
@@ -205,9 +211,31 @@ public class AIEmbeddingServiceImpl implements AIEmbeddingService {
 
         //5.写入向量数据库前，先按file_name_md5清理可能残留的旧向量（保证ingest幂等，防止重试产生重复向量），再写入新向量
         try {
+
+            //6.先删除该文档的向量，确保幂等
             Filter filter = metadataKey(DocMetaDataKeyEnum.FILE_NAME_MD5.getKey()).isIn(newDocsMap.keySet());
             embeddingStore.removeAll(filter);
-            ingestor.ingest(newDocs);
+//            ingestor.ingest(newDocs);
+
+            //7.循环切分文档
+            List<TextSegment> segments = new ArrayList<>();
+            for (Document newDoc : newDocs) {
+                List<TextSegment> textSegments = documentSplitter.split(newDoc);
+                for (int i = 0; i < textSegments.size(); i++) {
+                    TextSegment textSegment = textSegments.get(i);
+                    textSegment.metadata().put("chunk_index", i);
+                }
+                segments.addAll(textSegments);
+            }
+
+            //8.向量化
+            Response<List<Embedding>> embeddingsResponse = embeddingModel.embedAll(segments);
+
+            //9.写入向量数据库
+            List<String> ids = embeddingStore.addAll(embeddingsResponse.content(), segments);
+
+            System.out.println(1);
+
         } catch (Exception e) {
             log.error("[AI] 新增文档 向量写入失败，本次不写入文档记录，可重新上传重试。文件:[{}]", newFiles, e);
             throw e;
@@ -256,7 +284,7 @@ public class AIEmbeddingServiceImpl implements AIEmbeddingService {
         try {
             Filter filter = metadataKey(DocMetaDataKeyEnum.FILE_NAME_MD5.getKey()).isIn(updateDocsNameSet);
             embeddingStore.removeAll(filter);
-            ingestor.ingest(updateDocs);
+//            ingestor.ingest(updateDocs);
         } catch (Exception e) {
             log.error("[AI] 新增文档 向量更新失败，本次不更新文档记录，可重新上传重试。文件:[{}]", updateFiles, e);
             throw e;

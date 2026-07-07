@@ -31,6 +31,23 @@ public class IngestorConfig {
     private final EmbeddingStore<TextSegment> embeddingStore;
 
     @Bean
+    public DocumentSplitter documentSplitter() {
+
+        //1.定义复合切分器: 专用切分器走专门的切分规则，其余文档走通用规则
+        return document -> {
+
+            //2.获取文档切分器类型
+            String ingestorType = document.metadata().getString(DocMetaDataKeyEnum.INGESTOR_TYPE.getKey());
+
+            //3.获取文档切分器
+            IIngestor docIngestor = DocIngestorFactory.getDocIngestor(ingestorType);
+
+            //4.切分文档
+            return docIngestor.split(document);
+        };
+    }
+
+    @Bean
     public EmbeddingStoreIngestor ingestor() {
 
         //1.定义复合切分器: 专用切分器走专门的切分规则，其余文档走通用规则
