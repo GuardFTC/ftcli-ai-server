@@ -36,7 +36,7 @@ CREATE TABLE IF NOT EXISTS embedding_record
 -- 文件名MD5唯一索引，防止同一文件重复录入
 CREATE UNIQUE INDEX IF NOT EXISTS idx_embedding_record_name_md5 ON embedding_record(file_name_md5);
 
--- Embedding文档chunk记录表
+-- Embedding文档 chunk记录表
 CREATE TABLE IF NOT EXISTS embedding_chunk_record
 (
     id                INTEGER PRIMARY KEY AUTOINCREMENT,
