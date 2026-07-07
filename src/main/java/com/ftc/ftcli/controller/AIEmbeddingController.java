@@ -5,7 +5,7 @@ import com.ftc.ftcli.entity.result.EmbeddingFileUploadResult;
 import com.ftc.ftcli.entity.embedding.EmbeddingRecordEntity;
 import com.ftc.ftcli.entity.result.RestfulResult;
 import com.ftc.ftcli.service.embedding.EmbeddingService;
-import com.ftc.ftcli.service.base.ChromaService;
+import com.ftc.ftcli.service.chroma.ChromaService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;

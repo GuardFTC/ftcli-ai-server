@@ -1,11 +1,11 @@
-package com.ftc.ftcli.service.base.impl;
+package com.ftc.ftcli.service.chroma.impl;
 
 import cn.hutool.core.util.StrUtil;
 import com.ftc.ftcli.entity.embedding.EmbeddingRecordEntity;
 import com.ftc.ftcli.infra.chroma.CollectionRepository;
 import com.ftc.ftcli.infra.chroma.RecordRepository;
 import com.ftc.ftcli.infra.sqlite.repository.EmbeddingRecordRepository;
-import com.ftc.ftcli.service.base.ChromaService;
+import com.ftc.ftcli.service.chroma.ChromaService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
