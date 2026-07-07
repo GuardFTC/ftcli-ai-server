@@ -2,7 +2,7 @@ package com.ftc.ftcli.service.impl;
 
 import com.ftc.ftcli.ai.tool.ToolRegistry;
 import com.ftc.ftcli.ai.tool.spec.ToolSpecEntity;
-import com.ftc.ftcli.infra.sqlite.ToolSpecRepository;
+import com.ftc.ftcli.infra.sqlite.repository.ToolSpecRepository;
 import com.ftc.ftcli.service.AIToolService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

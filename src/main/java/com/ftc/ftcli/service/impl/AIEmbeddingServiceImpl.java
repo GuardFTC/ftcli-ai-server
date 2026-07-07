@@ -4,13 +4,18 @@ import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.StrUtil;
 import com.ftc.ftcli.common.enums.doc.DocLoaderEnum;
 import com.ftc.ftcli.common.enums.doc.DocMetaDataKeyEnum;
+import com.ftc.ftcli.common.enums.doc.SegmentMetaDataKeyEnum;
 import com.ftc.ftcli.common.util.doc.DocUtil;
+import com.ftc.ftcli.common.util.doc.SegmentUtil;
 import com.ftc.ftcli.common.util.doc.doc_loader.DocLoaderFactory;
 import com.ftc.ftcli.common.util.doc.doc_loader.IDocLoader;
+import com.ftc.ftcli.entity.embedding.EmbeddingChunkRecordEntity;
 import com.ftc.ftcli.entity.embedding.EmbeddingFileUploadPayload;
 import com.ftc.ftcli.entity.embedding.EmbeddingFileUploadResult;
 import com.ftc.ftcli.entity.embedding.EmbeddingRecordEntity;
-import com.ftc.ftcli.infra.sqlite.EmbeddingRecordRepository;
+import com.ftc.ftcli.infra.sqlite.repository.EmbeddingChunkRecordRepository;
+import com.ftc.ftcli.infra.sqlite.repository.EmbeddingRecordRepository;
+import com.ftc.ftcli.infra.sqlite.store.EmbeddingRecordStore;
 import com.ftc.ftcli.service.AIEmbeddingService;
 import dev.langchain4j.data.document.Document;
 import dev.langchain4j.data.document.DocumentSplitter;
@@ -50,6 +55,10 @@ public class AIEmbeddingServiceImpl implements AIEmbeddingService {
 
     private final EmbeddingRecordRepository embeddingRecordRepository;
 
+    private final EmbeddingChunkRecordRepository embeddingChunkRecordRepository;
+
+    private final EmbeddingRecordStore embeddingRecordStore;
+
     @Override
     public List<EmbeddingRecordEntity> getDocs() {
         return embeddingRecordRepository.findAll();
@@ -69,8 +78,8 @@ public class AIEmbeddingServiceImpl implements AIEmbeddingService {
         Filter filter = metadataKey(DocMetaDataKeyEnum.FILE_NAME_MD5.getKey()).isEqualTo(docRecord.getFileNameMd5());
         embeddingStore.removeAll(filter);
 
-        //3.删除文档记录
-        embeddingRecordRepository.deleteById(id);
+        //3.原子删除文档记录及其关联Chunk记录
+        embeddingRecordStore.removeRecord(id, docRecord.getFileNameMd5());
     }
 
     @Override
@@ -189,7 +198,7 @@ public class AIEmbeddingServiceImpl implements AIEmbeddingService {
      * @param newDocsMap 新文档
      * @return 新增文件列表
      */
-    private List<String> addNewDocs(Map<String, Document> newDocsMap) {
+    List<String> addNewDocs(Map<String, Document> newDocsMap) {
 
         //1.为空直接返回
         if (CollUtil.isEmpty(newDocsMap)) {
@@ -210,39 +219,40 @@ public class AIEmbeddingServiceImpl implements AIEmbeddingService {
         List<Document> newDocs = newDocsMap.values().stream().toList();
 
         //5.写入向量数据库前，先按file_name_md5清理可能残留的旧向量（保证ingest幂等，防止重试产生重复向量），再写入新向量
+        List<TextSegment> segments = new ArrayList<>();
         try {
 
             //6.先删除该文档的向量，确保幂等
             Filter filter = metadataKey(DocMetaDataKeyEnum.FILE_NAME_MD5.getKey()).isIn(newDocsMap.keySet());
             embeddingStore.removeAll(filter);
-//            ingestor.ingest(newDocs);
 
             //7.循环切分文档
-            List<TextSegment> segments = new ArrayList<>();
             for (Document newDoc : newDocs) {
                 List<TextSegment> textSegments = documentSplitter.split(newDoc);
-                for (int i = 0; i < textSegments.size(); i++) {
-                    TextSegment textSegment = textSegments.get(i);
-                    textSegment.metadata().put("chunk_index", i);
+
+                int i = 0;
+                for (TextSegment textSegment : textSegments) {
+                    textSegment.metadata().put(SegmentMetaDataKeyEnum.CHUNK_INDEX.getKey(), String.valueOf(i++));
+                    textSegment.metadata().put(SegmentMetaDataKeyEnum.CHUNK_CONTENT_MD5.getKey(), SegmentUtil.getSegmentTextMD5(textSegment));
+                    segments.add(textSegment);
                 }
-                segments.addAll(textSegments);
             }
 
             //8.向量化
             Response<List<Embedding>> embeddingsResponse = embeddingModel.embedAll(segments);
 
             //9.写入向量数据库
-            List<String> ids = embeddingStore.addAll(embeddingsResponse.content(), segments);
-
-            System.out.println(1);
-
+            embeddingStore.addAll(embeddingsResponse.content(), segments);
         } catch (Exception e) {
             log.error("[AI] 新增文档 向量写入失败，本次不写入文档记录，可重新上传重试。文件:[{}]", newFiles, e);
             throw e;
         }
 
-        //6.向量写入成功后，最后写入文档记录（SQLite作为唯一事实源，失败可靠下次上传自愈）
-        embeddingRecordRepository.saveBatch(newRecords);
+        //解析为记录
+        List<EmbeddingChunkRecordEntity> chunkRecords = segments.stream().map(SegmentUtil::chunk2Record).toList();
+
+        //10.原子保存文档记录及Chunk记录
+        embeddingRecordStore.saveRecords(newRecords, chunkRecords);
 
         //7.解析出新增文件列表，返回
         return newFiles;

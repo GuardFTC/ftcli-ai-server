@@ -2,7 +2,7 @@ package com.ftc.ftcli.ai.store;
 
 import cn.hutool.core.util.StrUtil;
 import com.ftc.ftcli.entity.chat.ChatMemoryEntity;
-import com.ftc.ftcli.infra.sqlite.ChatMemoryRepository;
+import com.ftc.ftcli.infra.sqlite.repository.ChatMemoryRepository;
 import dev.langchain4j.data.message.ChatMessage;
 import dev.langchain4j.store.memory.chat.ChatMemoryStore;
 import lombok.RequiredArgsConstructor;

@@ -4,7 +4,7 @@ import cn.hutool.core.util.StrUtil;
 import com.ftc.ftcli.entity.embedding.EmbeddingRecordEntity;
 import com.ftc.ftcli.infra.chroma.CollectionRepository;
 import com.ftc.ftcli.infra.chroma.RecordRepository;
-import com.ftc.ftcli.infra.sqlite.EmbeddingRecordRepository;
+import com.ftc.ftcli.infra.sqlite.repository.EmbeddingRecordRepository;
 import com.ftc.ftcli.service.ChromaService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

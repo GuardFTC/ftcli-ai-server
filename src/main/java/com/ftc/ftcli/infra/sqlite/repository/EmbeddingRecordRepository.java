@@ -1,4 +1,4 @@
-package com.ftc.ftcli.infra.sqlite;
+package com.ftc.ftcli.infra.sqlite.repository;
 
 import cn.hutool.core.collection.CollUtil;
 import com.ftc.ftcli.entity.embedding.EmbeddingRecordEntity;

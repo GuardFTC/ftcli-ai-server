@@ -5,7 +5,7 @@ import com.ftc.ftcli.ai.tool.executor.ToolExecutorFactory;
 import com.ftc.ftcli.ai.tool.spec.ToolSpecBuilder;
 import com.ftc.ftcli.ai.tool.spec.ToolSpecEntity;
 import com.ftc.ftcli.common.util.ai.AiTraceLog;
-import com.ftc.ftcli.infra.sqlite.ToolSpecRepository;
+import com.ftc.ftcli.infra.sqlite.repository.ToolSpecRepository;
 import dev.langchain4j.agent.tool.ToolSpecification;
 import dev.langchain4j.service.tool.ToolExecutor;
 import dev.langchain4j.service.tool.ToolProvider;
