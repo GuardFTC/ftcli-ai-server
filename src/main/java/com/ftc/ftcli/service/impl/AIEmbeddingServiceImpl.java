@@ -10,8 +10,6 @@ import com.ftc.ftcli.common.util.doc.doc_loader.IDocLoader;
 import com.ftc.ftcli.entity.embedding.EmbeddingFileUploadPayload;
 import com.ftc.ftcli.entity.embedding.EmbeddingFileUploadResult;
 import com.ftc.ftcli.entity.embedding.EmbeddingRecordEntity;
-import com.ftc.ftcli.infra.chroma.CollectionRepository;
-import com.ftc.ftcli.infra.chroma.RecordRepository;
 import com.ftc.ftcli.infra.sqlite.EmbeddingRecordRepository;
 import com.ftc.ftcli.service.AIEmbeddingService;
 import dev.langchain4j.data.document.Document;
@@ -45,10 +43,6 @@ public class AIEmbeddingServiceImpl implements AIEmbeddingService {
     private final EmbeddingStore<TextSegment> embeddingStore;
 
     private final EmbeddingRecordRepository embeddingRecordRepository;
-
-    private final CollectionRepository chromaCollectionRepository;
-
-    private final RecordRepository chromaRecordRepository;
 
     @Override
     public List<EmbeddingRecordEntity> getDocs() {
@@ -128,65 +122,6 @@ public class AIEmbeddingServiceImpl implements AIEmbeddingService {
 
         //3.删除文档记录
         embeddingRecordRepository.deleteById(id);
-    }
-
-    @Override
-    public int getVectorCount() {
-
-        //1.查询集合ID
-        String collectionId = chromaCollectionRepository.getCollectionId();
-        if (StrUtil.isBlank(collectionId)) {
-            return 0;
-        }
-
-        //2.查询向量数量，返回结果
-        return chromaCollectionRepository.getVectorCount(collectionId);
-    }
-
-    @Override
-    public List<Map<String, Object>> getChunks(Long id, int offset, int size) {
-
-        //1.获取集合ID
-        String collectionId = chromaCollectionRepository.getCollectionId();
-        if (StrUtil.isBlank(collectionId)) {
-            return List.of();
-        }
-
-        //2.查询文档记录
-        EmbeddingRecordEntity docRecord = embeddingRecordRepository.findById(id);
-        if (null == docRecord) {
-            log.error("[AI] 获取文档片段 文档不存在:[{}]", id);
-            return List.of();
-        }
-
-        //3.获取文件名MD5
-        String fileNameMd5 = docRecord.getFileNameMd5();
-
-        //4.获取文档片段，返回结果
-        return chromaRecordRepository.getChunks(collectionId, fileNameMd5, offset, size);
-    }
-
-    @Override
-    public int getChunkCount(Long id) {
-
-        //1.获取集合ID
-        String collectionId = chromaCollectionRepository.getCollectionId();
-        if (StrUtil.isBlank(collectionId)) {
-            return 0;
-        }
-
-        //2.查询文档记录
-        EmbeddingRecordEntity docRecord = embeddingRecordRepository.findById(id);
-        if (null == docRecord) {
-            log.error("[AI] 获取文档片段数 文档不存在:[{}]", id);
-            return 0;
-        }
-
-        //3.获取文件名MD5
-        String fileNameMd5 = docRecord.getFileNameMd5();
-
-        //4.查询片段数，返回
-        return chromaRecordRepository.getChunkCount(collectionId, fileNameMd5);
     }
 
     /**

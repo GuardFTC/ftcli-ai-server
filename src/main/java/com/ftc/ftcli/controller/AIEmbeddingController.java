@@ -5,6 +5,7 @@ import com.ftc.ftcli.entity.embedding.EmbeddingFileUploadResult;
 import com.ftc.ftcli.entity.embedding.EmbeddingRecordEntity;
 import com.ftc.ftcli.entity.result.RestfulResult;
 import com.ftc.ftcli.service.AIEmbeddingService;
+import com.ftc.ftcli.service.ChromaService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -27,6 +28,8 @@ import java.util.Map;
 public class AIEmbeddingController {
 
     private final AIEmbeddingService aiEmbeddingService;
+
+    private final ChromaService chromaService;
 
     @GetMapping("docs")
     @Operation(summary = "查询文档")
@@ -74,7 +77,7 @@ public class AIEmbeddingController {
     public RestfulResult<Integer> getVectorCount() {
 
         //1.查询向量记录数
-        int count = aiEmbeddingService.getVectorCount();
+        int count = chromaService.getVectorCount();
         log.info("[AI] 查询向量记录数 出参:[{}]", count);
 
         //2.返回
@@ -89,7 +92,7 @@ public class AIEmbeddingController {
             @RequestParam(defaultValue = "10") int size) {
 
         //1.查询文档片段
-        List<Map<String, Object>> chunks = aiEmbeddingService.getChunks(id, offset, size);
+        List<Map<String, Object>> chunks = chromaService.getChunks(id, offset, size);
         log.info("[AI] 查询文档片段 文档ID:[{}] offset:[{}] size:[{}] 返回数量:[{}]", id, offset, size, chunks.size());
 
         //2.返回
@@ -101,7 +104,7 @@ public class AIEmbeddingController {
     public RestfulResult<Integer> getChunkCount(@PathVariable Long id) {
 
         //1.查询文档片段数
-        int count = aiEmbeddingService.getChunkCount(id);
+        int count = chromaService.getChunkCount(id);
         log.info("[AI] 查询文档片段数 文档ID:[{}] 出参:[{}]", id, count);
 
         //2.返回
