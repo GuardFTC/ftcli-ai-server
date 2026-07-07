@@ -200,20 +200,23 @@ public class AIEmbeddingServiceImpl implements AIEmbeddingService {
                 .map(EmbeddingRecordEntity::getFullPath)
                 .toList();
 
-        //4.写入向量数据库前，先按file_name_md5清理可能残留的旧向量（保证ingest幂等，防止重试产生重复向量），再写入新向量
+        //4.解析出新增文档列表
+        List<Document> newDocs = newDocsMap.values().stream().toList();
+
+        //5.写入向量数据库前，先按file_name_md5清理可能残留的旧向量（保证ingest幂等，防止重试产生重复向量），再写入新向量
         try {
             Filter filter = metadataKey(DocMetaDataKeyEnum.FILE_NAME_MD5.getKey()).isIn(newDocsMap.keySet());
             embeddingStore.removeAll(filter);
-            ingestor.ingest(newDocsMap.values().stream().toList());
+            ingestor.ingest(newDocs);
         } catch (Exception e) {
             log.error("[AI] 新增文档 向量写入失败，本次不写入文档记录，可重新上传重试。文件:[{}]", newFiles, e);
             throw e;
         }
 
-        //5.向量写入成功后，最后写入文档记录（SQLite作为唯一事实源，失败可靠下次上传自愈）
+        //6.向量写入成功后，最后写入文档记录（SQLite作为唯一事实源，失败可靠下次上传自愈）
         embeddingRecordRepository.saveBatch(newRecords);
 
-        //6.解析出新增文件列表，返回
+        //7.解析出新增文件列表，返回
         return newFiles;
     }
 
