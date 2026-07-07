@@ -13,7 +13,6 @@ import com.ftc.ftcli.entity.embedding.EmbeddingRecordEntity;
 import com.ftc.ftcli.infra.chroma.CollectionRepository;
 import com.ftc.ftcli.infra.chroma.RecordRepository;
 import com.ftc.ftcli.infra.sqlite.EmbeddingRecordRepository;
-import com.ftc.ftcli.properties.embedding.StoreProperties;
 import com.ftc.ftcli.service.AIEmbeddingService;
 import dev.langchain4j.data.document.Document;
 import dev.langchain4j.data.segment.TextSegment;
@@ -40,8 +39,6 @@ import static dev.langchain4j.store.embedding.filter.MetadataFilterBuilder.metad
 @Service
 @RequiredArgsConstructor
 public class AIEmbeddingServiceImpl implements AIEmbeddingService {
-
-    private final StoreProperties chromaProperties;
 
     private final EmbeddingStoreIngestor ingestor;
 
