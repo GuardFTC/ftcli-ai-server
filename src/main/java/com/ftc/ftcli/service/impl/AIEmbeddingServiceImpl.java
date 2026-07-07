@@ -77,26 +77,19 @@ public class AIEmbeddingServiceImpl implements AIEmbeddingService {
             return new EmbeddingFileUploadResult();
         }
 
-        //2.通过path获取文档加载类型
-        DocLoaderEnum docLoadEnum = IDocLoader.getTypeByPath(path);
-
-        //3.通过类型获取文档加载器
-        IDocLoader docLoader = DocLoaderFactory.getDocLoader(docLoadEnum);
-
-        //4.加载文档
-        Map<String, Document> docsMap = docLoader.loadDocs(path);
-        if (CollUtil.isEmpty(docsMap)) {
+        //2.获取新增文档名MD5-文档Map
+        Map<String, Document> newDocMap = getNewDocMap(path);
+        if (CollUtil.isEmpty(newDocMap)) {
             log.error("[AI] 新增文档 文档不存在:[{}]", path);
-            return new EmbeddingFileUploadResult();
         } else {
-            log.info("[AI] 新增文档 加载文档数量:[{}]", docsMap.size());
+            log.info("[AI] 新增文档 加载文档数量:[{}]", newDocMap.size());
         }
 
         //5.获取已存在文档记录Map
-        Map<String, EmbeddingRecordEntity> existDocRecordsMap = getExistDocRecordsMap(docsMap);
+        Map<String, EmbeddingRecordEntity> existDocRecordsMap = getExistDocRecordsMap(newDocMap);
 
         //6.按是否已存在分组文档
-        Map<Boolean, Map<String, Document>> partitionedDocsMap = partitionedDocsMap(existDocRecordsMap, docsMap);
+        Map<Boolean, Map<String, Document>> partitionedDocsMap = partitionedDocsMap(existDocRecordsMap, newDocMap);
 
         //7.获取新增文档
         Map<String, Document> newDocsMap = partitionedDocsMap.getOrDefault(false, Map.of());
@@ -125,15 +118,33 @@ public class AIEmbeddingServiceImpl implements AIEmbeddingService {
     }
 
     /**
+     * 获取新增文档名MD5-文档Map
+     *
+     * @param path 文件路径/URL
+     * @return 新增文档名MD5-文档Map
+     */
+    private static Map<String, Document> getNewDocMap(String path) {
+
+        //1.通过path获取文档加载类型
+        DocLoaderEnum docLoadEnum = IDocLoader.getTypeByPath(path);
+
+        //2.通过类型获取文档加载器
+        IDocLoader docLoader = DocLoaderFactory.getDocLoader(docLoadEnum);
+
+        //3.加载文档
+        return docLoader.loadDocs(path);
+    }
+
+    /**
      * 获取已存在文档记录Map
      *
-     * @param docsMap 文档名MD5-文档Map
+     * @param newDocMap 新增文档名MD5-文档Map
      * @return 文档名MD5-文档记录Map
      */
-    private Map<String, EmbeddingRecordEntity> getExistDocRecordsMap(Map<String, Document> docsMap) {
+    private Map<String, EmbeddingRecordEntity> getExistDocRecordsMap(Map<String, Document> newDocMap) {
 
         //1.获取上传文档名MD5 Set
-        Set<String> docNameMD5Set = docsMap.keySet();
+        Set<String> docNameMD5Set = newDocMap.keySet();
 
         //2.根据上传文档名MD5 Set，查询已写入的文档记录
         Set<EmbeddingRecordEntity> existDocsRecord = embeddingRecordRepository.findAllByMd5(docNameMD5Set);
@@ -227,15 +238,15 @@ public class AIEmbeddingServiceImpl implements AIEmbeddingService {
                 .map(existDocRecordsMap::get)
                 .toList();
 
-        //3.过滤出文档内容发生更新的文档
+        //3.解析出更新文件列表，返回
+        List<String> updateFiles = updateDocRecords.stream()
+                .map(EmbeddingRecordEntity::getFullPath)
+                .toList();
+
+        //4.过滤出文档内容发生更新的文档
         List<Document> updateDocs = existDocsMap.keySet().stream()
                 .filter(updateDocsNameSet::contains)
                 .map(existDocsMap::get)
-                .toList();
-
-        //4.解析出更新文件列表，返回
-        List<String> updateFiles = updateDocRecords.stream()
-                .map(EmbeddingRecordEntity::getFullPath)
                 .toList();
 
         //5.先按file_name_md5批量删除旧向量，再写入更新后的向量
