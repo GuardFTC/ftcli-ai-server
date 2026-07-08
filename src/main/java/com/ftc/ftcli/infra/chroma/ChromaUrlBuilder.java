@@ -1,6 +1,6 @@
 package com.ftc.ftcli.infra.chroma;
 
-import com.ftc.ftcli.properties.embedding.StoreProperties;
+import com.ftc.ftcli.properties.embedding.StoreChromaProperties;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -13,7 +13,7 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class ChromaUrlBuilder {
 
-    private final StoreProperties chromaProperties;
+    private final StoreChromaProperties chromaProperties;
 
     /**
      * 查询集合列表URL

@@ -9,12 +9,12 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 /**
  * @author 冯铁城 [17615007230@163.com]
  * @date 2026-06-03 10:35:05
- * @describe 向量存储配置属性类
+ * @describe Chroma向量存储配置属性类
  */
 @Data
 @Slf4j
 @ConfigurationProperties(prefix = "ai.embedding.store.chroma")
-public class StoreProperties {
+public class StoreChromaProperties {
 
     /**
      * Chroma服务URL

@@ -2,7 +2,7 @@ package com.ftc.ftcli.config.ai.embedding;
 
 import com.ftc.ftcli.properties.embedding.GithubProperties;
 import com.ftc.ftcli.properties.embedding.ModelProperties;
-import com.ftc.ftcli.properties.embedding.StoreProperties;
+import com.ftc.ftcli.properties.embedding.StoreChromaProperties;
 import dev.langchain4j.community.model.zhipu.ZhipuAiEmbeddingModel;
 import dev.langchain4j.data.segment.TextSegment;
 import dev.langchain4j.model.embedding.EmbeddingModel;
@@ -23,12 +23,12 @@ import org.springframework.context.annotation.Configuration;
 @Slf4j
 @Configuration
 @RequiredArgsConstructor
-@EnableConfigurationProperties({ModelProperties.class, StoreProperties.class, GithubProperties.class})
+@EnableConfigurationProperties({ModelProperties.class, StoreChromaProperties.class, GithubProperties.class})
 public class BaseConfig {
 
     private final ModelProperties modelProperties;
 
-    private final StoreProperties storeProperties;
+    private final StoreChromaProperties storeChromaProperties;
 
     @Bean
     public EmbeddingModel embeddingModel() {
@@ -41,11 +41,11 @@ public class BaseConfig {
     @Bean
     public EmbeddingStore<TextSegment> embeddingStore() {
         return ChromaEmbeddingStore.builder()
-                .baseUrl(storeProperties.getUrl())
+                .baseUrl(storeChromaProperties.getUrl())
                 .apiVersion(ChromaApiVersion.V2)
-                .tenantName(storeProperties.getTenant())
-                .databaseName(storeProperties.getDatabase())
-                .collectionName(storeProperties.getCollection())
+                .tenantName(storeChromaProperties.getTenant())
+                .databaseName(storeChromaProperties.getDatabase())
+                .collectionName(storeChromaProperties.getCollection())
                 .logRequests(false)
                 .logResponses(false)
                 .build();

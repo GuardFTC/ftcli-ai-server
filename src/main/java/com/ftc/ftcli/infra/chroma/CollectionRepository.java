@@ -5,7 +5,7 @@ import cn.hutool.http.HttpUtil;
 import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.JSONArray;
 import com.alibaba.fastjson2.JSONObject;
-import com.ftc.ftcli.properties.embedding.StoreProperties;
+import com.ftc.ftcli.properties.embedding.StoreChromaProperties;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Repository;
@@ -20,7 +20,7 @@ import org.springframework.stereotype.Repository;
 @RequiredArgsConstructor
 public class CollectionRepository {
 
-    private final StoreProperties chromaProperties;
+    private final StoreChromaProperties chromaProperties;
 
     private final ChromaUrlBuilder urlBuilder;
 
