@@ -270,7 +270,8 @@ public class EmbeddingUploadServiceImpl implements EmbeddingUploadService {
             String chunkContentMd5 = chunk.metadata().getString(SegmentMetaDataKeyEnum.CHUNK_CONTENT_MD5.getKey());
 
             //6.获取对应的chunk记录
-            EmbeddingChunkRecordEntity chunkRecord = chunkRecordMap.get(fileNameMd5).get(chunkIndex);
+            Map<Integer, EmbeddingChunkRecordEntity> indexMap = chunkRecordMap.getOrDefault(fileNameMd5, Map.of());
+            EmbeddingChunkRecordEntity chunkRecord = indexMap.get(chunkIndex);
 
             //7.如果为空，直接存入结果更新列表
             if (chunkRecord == null) {
