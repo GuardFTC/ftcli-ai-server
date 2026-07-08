@@ -1,4 +1,4 @@
-package com.ftc.ftcli.common.util.doc;
+package com.ftc.ftcli.common.util.embedding;
 
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.crypto.digest.DigestUtil;

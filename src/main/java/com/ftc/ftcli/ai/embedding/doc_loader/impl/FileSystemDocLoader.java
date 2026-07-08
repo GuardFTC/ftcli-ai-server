@@ -3,7 +3,7 @@ package com.ftc.ftcli.ai.embedding.doc_loader.impl;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.crypto.digest.DigestUtil;
 import com.ftc.ftcli.common.enums.doc.DocMetaDataKeyEnum;
-import com.ftc.ftcli.common.util.doc.DocUtil;
+import com.ftc.ftcli.common.util.embedding.DocUtil;
 import com.ftc.ftcli.common.enums.doc.DocLoaderEnum;
 import com.ftc.ftcli.ai.embedding.doc_loader.IDocLoader;
 import com.ftc.ftcli.ai.embedding.doc_parser.DocParserFactory;
