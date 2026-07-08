@@ -1,10 +1,10 @@
 package com.ftc.ftcli.service.embedding.impl;
 
 import cn.hutool.core.collection.CollUtil;
-import com.ftc.ftcli.common.enums.doc.DocMetaDataKeyEnum;
 import com.ftc.ftcli.common.enums.doc.ChunkMetaDataKeyEnum;
-import com.ftc.ftcli.common.util.doc.DocUtil;
+import com.ftc.ftcli.common.enums.doc.DocMetaDataKeyEnum;
 import com.ftc.ftcli.common.util.doc.ChunkUtil;
+import com.ftc.ftcli.common.util.doc.DocUtil;
 import com.ftc.ftcli.entity.embedding.EmbeddingChunkRecordEntity;
 import com.ftc.ftcli.entity.embedding.EmbeddingRecordEntity;
 import com.ftc.ftcli.infra.sqlite.repository.EmbeddingChunkRecordRepository;
@@ -22,11 +22,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static dev.langchain4j.store.embedding.filter.Filter.and;
 import static dev.langchain4j.store.embedding.filter.MetadataFilterBuilder.metadataKey;
@@ -105,7 +103,7 @@ public class EmbeddingUploadServiceImpl implements EmbeddingUploadService {
     @Override
     public List<String> updateDocs(Map<String, Document> existDocsMap, Map<String, EmbeddingRecordEntity> uploadDocRecordMap) {
 
-        //1.过滤出文档内容发生变更的文档名称MD5
+        //1.过滤出 文档内容发生变更的文档名称MD5 列表
         Set<String> updateDocsNameMD5Set = existDocsMap.keySet()
                 .stream()
                 .filter(key -> isDocContentChange(existDocsMap, uploadDocRecordMap, key))
@@ -123,49 +121,56 @@ public class EmbeddingUploadServiceImpl implements EmbeddingUploadService {
                 .map(existDocsMap::get)
                 .toList();
 
-        //4.切分更新文档
+        //4.切分更新文档，获取 更新文档chunk列表
         List<TextSegment> updateChunks = splitDocs(updateDocs);
 
-        //5.将文档chunk列表解析为chunk记录列表
-        List<EmbeddingChunkRecordEntity> updateChunkRecords = updateChunks.stream().map(ChunkUtil::chunk2Record).toList();
+        //5.将 更新文档chunk列表 解析为 chunk记录列表
+        List<EmbeddingChunkRecordEntity> memoryUpdateChunkRecords = updateChunks.stream().map(ChunkUtil::chunk2Record).toList();
 
-        //6.获取最终更新的chunk列表
-        List<TextSegment> finalUpdateChunks = getFinalUpdateChunks(updateDocsNameMD5Set, updateChunks);
-        log.info("[AI] 新增文档 内容更新文档chunk数量:[{}]", finalUpdateChunks.size());
+        //6.查找更新文档对应的chunk记录
+        List<EmbeddingChunkRecordEntity> dbUpdateChunkRecords = chunkRecordRepository.findAllByFileNameMd5In(updateDocsNameMD5Set);
 
-        //7.为空直接返回
-        if (CollUtil.isEmpty(finalUpdateChunks)) {
+        //7.获取 新增/更新的chunk列表
+        List<TextSegment> addOrUpdateChunks = getAddOrUpdateChunks(dbUpdateChunkRecords, updateChunks);
+        log.info("[AI] 新增文档 新增/更新文档chunk数量:[{}]", addOrUpdateChunks.size());
+
+        //8.获取 删除的chunk列表
+        List<EmbeddingChunkRecordEntity> removeChunks = getRemoveChunks(dbUpdateChunkRecords, memoryUpdateChunkRecords);
+        log.info("[AI] 新增文档 删除文档chunk数量:[{}]", removeChunks.size());
+
+        //9.为空直接返回
+        if (CollUtil.isEmpty(addOrUpdateChunks) && CollUtil.isEmpty(removeChunks)) {
             return List.of();
         }
 
-        //8.过滤出文档内容发生更新的文档记录
+        //10.过滤出文档内容发生更新的文档记录
         List<EmbeddingRecordEntity> updateDocRecords = uploadDocRecordMap.keySet().stream()
                 .filter(updateDocsNameMD5Set::contains)
                 .map(uploadDocRecordMap::get)
                 .toList();
 
-        //9.解析出更新文件列表
+        //10.解析出更新文件列表
         List<String> updateFiles = updateDocRecords.stream()
                 .map(EmbeddingRecordEntity::getFullPath)
                 .toList();
 
-        //10.进行向量写入
+        //11.进行向量写入
         try {
 
-            //11.构建删除条件
-            Filter filter = buildDelteChunkFilter(finalUpdateChunks);
+            //12.构建删除条件
+            Filter filter = buildDelteChunkFilter(addOrUpdateChunks, removeChunks);
 
-            //12.先删除该文档的向量，避免数据库写入失败导致的孤儿向量，确保幂等
+            //13.先删除该文档的向量，避免数据库写入失败导致的孤儿向量，确保幂等
             embeddingStore.removeAll(filter);
 
-            //13.向量化
-            Response<List<Embedding>> embeddingsResponse = embeddingModel.embedAll(finalUpdateChunks);
+            //14.向量化
+            Response<List<Embedding>> embeddingsResponse = embeddingModel.embedAll(addOrUpdateChunks);
 
-            //14.写入向量数据库
-            embeddingStore.addAll(embeddingsResponse.content(), finalUpdateChunks);
+            //15.写入向量数据库
+            embeddingStore.addAll(embeddingsResponse.content(), addOrUpdateChunks);
 
             //15.原子性更新文档记录以及文档chunk记录
-            embeddingRecordStore.updateRecords(updateDocRecords, updateChunkRecords, updateDocsNameMD5Set);
+            embeddingRecordStore.updateRecords(updateDocRecords, memoryUpdateChunkRecords, updateDocsNameMD5Set);
         } catch (Exception e) {
             log.error("[AI] 新增文档 向量更新失败，本次不更新文档记录，可重新上传重试。文件:[{}]", updateFiles, e);
             throw e;
@@ -237,22 +242,19 @@ public class EmbeddingUploadServiceImpl implements EmbeddingUploadService {
     }
 
     /**
-     * 获取更新的chunk列表
+     * 获取新增/更新的chunk列表
      *
-     * @param updateDocsNameMD5Set 更新的文档名MD5集合
+     * @param dbUpdateChunkRecords 数据库中已有的更新的chunk记录
      * @param chunks               chunk列表
      * @return 更新的chunk列表
      */
-    private List<TextSegment> getFinalUpdateChunks(Set<String> updateDocsNameMD5Set, List<TextSegment> chunks) {
+    private List<TextSegment> getAddOrUpdateChunks(List<EmbeddingChunkRecordEntity> dbUpdateChunkRecords, List<TextSegment> chunks) {
 
-        //1.定义最终更新chunk集合
-        List<TextSegment> updateChunks = new ArrayList<>();
+        //1.定义 新增/更新的chunk列表
+        List<TextSegment> addOrUpdateChunks = new ArrayList<>();
 
-        //2.查找更新文档对应的chunk记录
-        List<EmbeddingChunkRecordEntity> chunkRecords = chunkRecordRepository.findAllByFileNameMd5In(updateDocsNameMD5Set);
-
-        //3.将chunk记录解析为 文件名MD5->chunk索引->chunk Map
-        Map<String, Map<Integer, EmbeddingChunkRecordEntity>> chunkRecordMap = chunkRecords.stream()
+        //2.将chunk记录解析为 文件名MD5->chunk索引->chunk Map
+        Map<String, Map<Integer, EmbeddingChunkRecordEntity>> chunkRecordMap = dbUpdateChunkRecords.stream()
                 .collect(Collectors.groupingBy(
                         EmbeddingChunkRecordEntity::getFileNameMd5,
                         Collectors.toMap(
@@ -261,74 +263,139 @@ public class EmbeddingUploadServiceImpl implements EmbeddingUploadService {
                         )
                 ));
 
-        //4.循环chunk列表
+        //3.循环chunk列表
         for (TextSegment chunk : chunks) {
 
-            //5.获取文件名MD5，chunk索引，以及chunk内容MD5
+            //4.获取文件名MD5，chunk索引，以及chunk内容MD5
             String fileNameMd5 = chunk.metadata().getString(DocMetaDataKeyEnum.FILE_NAME_MD5.getKey());
             Integer chunkIndex = chunk.metadata().getInteger(ChunkMetaDataKeyEnum.CHUNK_INDEX.getKey());
             String chunkContentMd5 = chunk.metadata().getString(ChunkMetaDataKeyEnum.CHUNK_CONTENT_MD5.getKey());
 
-            //6.获取对应的chunk记录
+            //5.获取对应的chunk记录
             Map<Integer, EmbeddingChunkRecordEntity> indexMap = chunkRecordMap.getOrDefault(fileNameMd5, Map.of());
             EmbeddingChunkRecordEntity chunkRecord = indexMap.get(chunkIndex);
 
-            //7.如果为空，直接存入结果更新列表
+            //6.如果为空，代表新增，直接存入结果集
             if (chunkRecord == null) {
-                updateChunks.add(chunk);
+                addOrUpdateChunks.add(chunk);
                 continue;
             }
 
-            //8.不为空，比较chunk内容MD5是否一致，不一致，存入结果更新列表
+            //7.不为空，比较chunk内容MD5是否一致，不一致，代表更新，存入结果集
             if (!chunkRecord.getChunkContentMd5().equals(chunkContentMd5)) {
-                updateChunks.add(chunk);
+                addOrUpdateChunks.add(chunk);
             }
         }
 
-        //9.返回更新的chunk列表
-        return updateChunks;
+        //8.返回新增/更新的chunk列表
+        return addOrUpdateChunks;
+    }
+
+    /**
+     * 获取删除的chunk列表
+     *
+     * @param dbUpdateChunkRecords     数据库更新的chunk记录
+     * @param memoryUpdateChunkRecords 内存更新的chunk记录
+     * @return 删除的chunk列表
+     */
+    private List<EmbeddingChunkRecordEntity> getRemoveChunks(List<EmbeddingChunkRecordEntity> dbUpdateChunkRecords, List<EmbeddingChunkRecordEntity> memoryUpdateChunkRecords) {
+
+        //1.定义 删除的chunk列表
+        List<EmbeddingChunkRecordEntity> removeChunks = new ArrayList<>();
+
+        //2.将数据库chunk记录解析为 文件名MD5->chunk索引 Map
+        Map<String, Map<Integer, EmbeddingChunkRecordEntity>> dbChunkRecordMap = dbUpdateChunkRecords.stream()
+                .collect(Collectors.groupingBy(
+                        EmbeddingChunkRecordEntity::getFileNameMd5,
+                        Collectors.toMap(
+                                EmbeddingChunkRecordEntity::getChunkIndex,
+                                chunk -> chunk
+                        )
+                ));
+
+        //3.将内存chunk记录解析为 文件名MD5->chunk索引->chunk Set
+        Map<String, Set<Integer>> memoryChunkRecordSet = memoryUpdateChunkRecords.stream()
+                .collect(Collectors.groupingBy(
+                        EmbeddingChunkRecordEntity::getFileNameMd5,
+                        Collectors.mapping(
+                                EmbeddingChunkRecordEntity::getChunkIndex,
+                                Collectors.toSet()
+                        )
+                ));
+
+        //4.遍历数据库chunk记录Map
+        for (String fileNameMD5 : dbChunkRecordMap.keySet()) {
+
+            //5.获取对应文件的chunk记录Map
+            Map<Integer, EmbeddingChunkRecordEntity> dbIndexMap = dbChunkRecordMap.getOrDefault(fileNameMD5, Map.of());
+            Set<Integer> memoryIndexSet = memoryChunkRecordSet.getOrDefault(fileNameMD5, Set.of());
+
+            //6.遍历数据库chunk记录Map
+            for (Integer chunkIndex : dbIndexMap.keySet()) {
+
+                //7.如果内存chunk记录Map中不存在该chunk索引，代表删除，存入删除列表
+                if (!memoryIndexSet.contains(chunkIndex)) {
+                    removeChunks.add(dbIndexMap.get(chunkIndex));
+                }
+            }
+        }
+
+        //8.返回删除的chunk列表
+        return removeChunks;
     }
 
     /**
      * 构建删除chunk的过滤条件
      *
-     * @param finalUpdateChunks 最终更新的chunk列表
+     * @param addOrUpdateChunks 新增/更新的chunk列表
+     * @param removeChunks      删除的chunk列表
      * @return 删除chunk的过滤条件
      */
-    private Filter buildDelteChunkFilter(List<TextSegment> finalUpdateChunks) {
+    private Filter buildDelteChunkFilter(List<TextSegment> addOrUpdateChunks, List<EmbeddingChunkRecordEntity> removeChunks) {
 
         //1.定义文件过滤条件列表
         List<Filter> fileFilters = new ArrayList<>();
 
-        //2.按照文件名MD5和chunk索引分组
-        Map<String, List<Integer>> groupedMap = finalUpdateChunks.stream()
-                .collect(Collectors.groupingBy(
-                        segment -> segment.metadata().getString(DocMetaDataKeyEnum.FILE_NAME_MD5.getKey()),
-                        Collectors.mapping(
-                                segment -> segment.metadata().getInteger(ChunkMetaDataKeyEnum.CHUNK_INDEX.getKey()),
-                                Collectors.toList()
-                        )
+        //2.将 addOrUpdateChunks 转换为公共的键值对流 (Key: MD5, Value: Index)
+        Stream<Map.Entry<String, Integer>> addOrUpdateStream = addOrUpdateChunks.stream()
+                .map(segment -> new AbstractMap.SimpleEntry<>(
+                        segment.metadata().getString(DocMetaDataKeyEnum.FILE_NAME_MD5.getKey()),
+                        segment.metadata().getInteger(ChunkMetaDataKeyEnum.CHUNK_INDEX.getKey())
                 ));
 
-        //3.遍历聚合后的 Map，构建每个文件的条件：(file_md5 == 'xxx' AND chunk_index IN (1, 2, 3))
-        groupedMap.forEach((fileMd5, chunkIndices) -> {
+        //3.将 removeChunks 转换为公共的键值对流 (Key: MD5, Value: Index)
+        Stream<Map.Entry<String, Integer>> removeStream = removeChunks.stream()
+                .map(entity -> new AbstractMap.SimpleEntry<>(
+                        entity.getFileNameMd5(),
+                        entity.getChunkIndex()
+                ));
 
-            //4.构建删除条件
+        //4.将两个流拼接，并一次性完成 GroupingBy 收集
+        Map<String, List<Integer>> mergedChunkIndexMap = Stream.concat(addOrUpdateStream, removeStream)
+                .collect(Collectors.groupingBy(
+                        Map.Entry::getKey,
+                        Collectors.mapping(Map.Entry::getValue, Collectors.toList())
+                ));
+
+        //5.遍历聚合后的 Map，构建每个文件的条件：(file_md5 == 'xxx' AND chunk_index IN (1, 2, 3))
+        mergedChunkIndexMap.forEach((fileMd5, chunkIndices) -> {
+
+            //6.构建删除条件
             Filter filter = and(
                     metadataKey(DocMetaDataKeyEnum.FILE_NAME_MD5.getKey()).isEqualTo(fileMd5),
                     metadataKey(ChunkMetaDataKeyEnum.CHUNK_INDEX.getKey()).isIn(chunkIndices)
             );
 
-            //5.添加过滤条件到列表
+            //7.添加过滤条件到列表
             fileFilters.add(filter);
         });
 
-        //6.如果只有一个文件的过滤条件，直接返回
+        //8.如果只有一个文件的过滤条件，直接返回
         if (fileFilters.size() == 1) {
             return fileFilters.getFirst();
         }
 
-        //7.用OR串联所有文件的过滤树
+        //9.用OR串联所有文件的过滤树
         return fileFilters.stream().reduce((a, b) -> Filter.or(a, b)).orElseThrow();
     }
 }
