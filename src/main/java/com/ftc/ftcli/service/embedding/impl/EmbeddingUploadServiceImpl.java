@@ -7,15 +7,13 @@ import com.ftc.ftcli.common.util.embedding.ChunkUtil;
 import com.ftc.ftcli.common.util.embedding.DocUtil;
 import com.ftc.ftcli.entity.embedding.EmbeddingChunkRecordEntity;
 import com.ftc.ftcli.entity.embedding.EmbeddingRecordEntity;
+import com.ftc.ftcli.infra.embedding.VectorRepository;
 import com.ftc.ftcli.infra.sqlite.repository.EmbeddingChunkRecordRepository;
 import com.ftc.ftcli.infra.sqlite.store.EmbeddingRecordStore;
 import com.ftc.ftcli.service.embedding.EmbeddingUploadService;
 import dev.langchain4j.data.document.Document;
 import dev.langchain4j.data.document.DocumentSplitter;
-import dev.langchain4j.data.embedding.Embedding;
 import dev.langchain4j.data.segment.TextSegment;
-import dev.langchain4j.model.embedding.EmbeddingModel;
-import dev.langchain4j.model.output.Response;
 import dev.langchain4j.store.embedding.EmbeddingStore;
 import dev.langchain4j.store.embedding.filter.Filter;
 import lombok.RequiredArgsConstructor;
@@ -41,13 +39,13 @@ public class EmbeddingUploadServiceImpl implements EmbeddingUploadService {
 
     private final DocumentSplitter documentSplitter;
 
-    private final EmbeddingModel embeddingModel;
-
     private final EmbeddingStore<TextSegment> embeddingStore;
 
-    private final EmbeddingRecordStore embeddingRecordStore;
-
     private final EmbeddingChunkRecordRepository chunkRecordRepository;
+
+    private final VectorRepository vectorRepository;
+
+    private final EmbeddingRecordStore embeddingRecordStore;
 
     @Override
     public List<String> addDocs(Map<String, Document> newDocsMap) {
@@ -83,20 +81,17 @@ public class EmbeddingUploadServiceImpl implements EmbeddingUploadService {
             Filter filter = metadataKey(DocMetaDataKeyEnum.FILE_NAME_MD5.getKey()).isIn(newDocsMap.keySet());
             embeddingStore.removeAll(filter);
 
-            //9.向量化
-            Response<List<Embedding>> embeddingsResponse = embeddingModel.embedAll(newChunks);
+            //9.批量向量化并写入向量数据库
+            vectorRepository.batchAddAll(newChunks);
 
-            //10.写入向量数据库
-            embeddingStore.addAll(embeddingsResponse.content(), newChunks);
-
-            //11.原子保存文档记录及Chunk记录
+            //10.原子保存文档记录及Chunk记录
             embeddingRecordStore.saveRecords(newDocRecords, newChunkRecords);
         } catch (Exception e) {
             log.error("[AI] 新增文档 向量写入失败，本次不写入文档记录，可重新上传重试。文件:[{}]", newFiles, e);
             throw e;
         }
 
-        //12.解析出新增文件列表，返回
+        //11.解析出新增文件列表，返回
         return newFiles;
     }
 
@@ -166,21 +161,18 @@ public class EmbeddingUploadServiceImpl implements EmbeddingUploadService {
             //15.如果 新增/更新的chunk列表 不为空
             if (CollUtil.isNotEmpty(addOrUpdateChunks)) {
 
-                //16.向量化
-                Response<List<Embedding>> embeddingsResponse = embeddingModel.embedAll(addOrUpdateChunks);
-
-                //17.写入向量数据库
-                embeddingStore.addAll(embeddingsResponse.content(), addOrUpdateChunks);
+                //16.批量向量化并写入向量数据库
+                vectorRepository.batchAddAll(addOrUpdateChunks);
             }
 
-            //18.原子性更新文档记录以及文档chunk记录
+            //17.原子性更新文档记录以及文档chunk记录
             embeddingRecordStore.updateRecords(updateDocRecords, memoryUpdateChunkRecords, updateDocsNameMD5Set);
         } catch (Exception e) {
             log.error("[AI] 新增文档 向量更新失败，本次不更新文档记录，可重新上传重试。文件:[{}]", updateFiles, e);
             throw e;
         }
 
-        //19.返回
+        //18.返回
         return updateFiles;
     }
 
