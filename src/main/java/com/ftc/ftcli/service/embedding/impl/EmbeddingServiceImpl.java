@@ -4,21 +4,17 @@ import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.StrUtil;
 import com.ftc.ftcli.common.enums.doc.DocLoaderEnum;
 import com.ftc.ftcli.common.enums.doc.DocMetaDataKeyEnum;
-import com.ftc.ftcli.common.util.doc.DocUtil;
 import com.ftc.ftcli.common.util.doc.doc_loader.DocLoaderFactory;
 import com.ftc.ftcli.common.util.doc.doc_loader.IDocLoader;
 import com.ftc.ftcli.entity.embedding.EmbeddingRecordEntity;
 import com.ftc.ftcli.entity.payload.EmbeddingFileUploadPayload;
 import com.ftc.ftcli.entity.result.EmbeddingFileUploadResult;
-import com.ftc.ftcli.infra.sqlite.repository.EmbeddingChunkRecordRepository;
 import com.ftc.ftcli.infra.sqlite.repository.EmbeddingRecordRepository;
 import com.ftc.ftcli.infra.sqlite.store.EmbeddingRecordStore;
 import com.ftc.ftcli.service.embedding.EmbeddingService;
 import com.ftc.ftcli.service.embedding.EmbeddingUploadService;
 import dev.langchain4j.data.document.Document;
-import dev.langchain4j.data.document.DocumentSplitter;
 import dev.langchain4j.data.segment.TextSegment;
-import dev.langchain4j.model.embedding.EmbeddingModel;
 import dev.langchain4j.store.embedding.EmbeddingStore;
 import dev.langchain4j.store.embedding.filter.Filter;
 import lombok.RequiredArgsConstructor;
@@ -42,15 +38,9 @@ import static dev.langchain4j.store.embedding.filter.MetadataFilterBuilder.metad
 @RequiredArgsConstructor
 public class EmbeddingServiceImpl implements EmbeddingService {
 
-    private final DocumentSplitter documentSplitter;
-
-    private final EmbeddingModel embeddingModel;
-
     private final EmbeddingStore<TextSegment> embeddingStore;
 
-    private final EmbeddingRecordRepository embeddingRecordRepository;
-
-    private final EmbeddingChunkRecordRepository embeddingChunkRecordRepository;
+    private final EmbeddingRecordRepository recordRepository;
 
     private final EmbeddingRecordStore embeddingRecordStore;
 
@@ -58,14 +48,14 @@ public class EmbeddingServiceImpl implements EmbeddingService {
 
     @Override
     public List<EmbeddingRecordEntity> getDocs() {
-        return embeddingRecordRepository.findAll();
+        return recordRepository.findAll();
     }
 
     @Override
     public void remove(Long id) {
 
         //1.查询文档记录
-        EmbeddingRecordEntity docRecord = embeddingRecordRepository.findById(id);
+        EmbeddingRecordEntity docRecord = recordRepository.findById(id);
         if (null == docRecord) {
             log.error("[AI] 删除文档 文档不存在:[{}]", id);
             return;
@@ -76,7 +66,7 @@ public class EmbeddingServiceImpl implements EmbeddingService {
         embeddingStore.removeAll(filter);
 
         //3.原子删除文档记录及其关联Chunk记录
-        embeddingRecordStore.removeRecord(id, docRecord.getFileNameMd5());
+        embeddingRecordStore.removeRecords(id, docRecord.getFileNameMd5());
     }
 
     @Override
@@ -107,25 +97,17 @@ public class EmbeddingServiceImpl implements EmbeddingService {
         Map<String, Document> newDocsMap = partitionedDocsMap.getOrDefault(false, Map.of());
         log.info("[AI] 新增文档 新增文档数量:[{}]", newDocsMap.size());
 
-        //6.新增文档，写入文档记录
+        //6.新增文档，写入文档记录，chunk记录
         List<String> newFiles = embeddingUploadService.addDocs(newDocsMap);
 
         //7.获取已存在文档
         Map<String, Document> existDocsMap = partitionedDocsMap.getOrDefault(true, Map.of());
         log.info("[AI] 新增文档 已存在文档数量:[{}]", existDocsMap.size());
 
-        //10.过滤出文档内容发生更新的文档名称MD5
-        Set<String> updateDocsNameSet = existDocsMap.entrySet()
-                .stream()
-                .filter(entry -> DocUtil.isDocContentChange(entry, uploadDocRecordMap))
-                .map(Map.Entry::getKey)
-                .collect(Collectors.toSet());
-        log.info("[AI] 新增文档 内容更新文档数量:[{}]", updateDocsNameSet.size());
+        //8.更新文档，更新文档记录，chunk记录
+        List<String> updateFiles = embeddingUploadService.updateDocs(existDocsMap, uploadDocRecordMap);
 
-        //11.已存在文档，如果文档内容发生更新，写入文档记录
-        List<String> updateFiles = updateChangeDocs(updateDocsNameSet, existDocsMap, uploadDocRecordMap);
-
-        //12.构建结果返回
+        //9.构建结果返回
         return new EmbeddingFileUploadResult(newFiles, updateFiles);
     }
 
@@ -159,7 +141,7 @@ public class EmbeddingServiceImpl implements EmbeddingService {
         Set<String> uploadDocNameMD5Set = uploadDocMap.keySet();
 
         //2.根据上传文档名MD5 Set，查询已写入的文档记录
-        Set<EmbeddingRecordEntity> uploadDocRecords = embeddingRecordRepository.findAllByMd5(uploadDocNameMD5Set);
+        Set<EmbeddingRecordEntity> uploadDocRecords = recordRepository.findAllByMd5(uploadDocNameMD5Set);
 
         //3.解析为已写入文档名MD5-文档记录 Map，返回
         return uploadDocRecords.stream()
@@ -199,11 +181,6 @@ public class EmbeddingServiceImpl implements EmbeddingService {
      */
     private List<String> updateChangeDocs(Set<String> updateDocsNameSet, Map<String, Document> existDocsMap, Map<String, EmbeddingRecordEntity> existDocRecordsMap) {
 
-        //1.为空直接返回
-        if (CollUtil.isEmpty(updateDocsNameSet)) {
-            return List.of();
-        }
-
         //2.过滤出文档内容发生更新的文档记录
         List<EmbeddingRecordEntity> updateDocRecords = existDocRecordsMap.keySet().stream()
                 .filter(updateDocsNameSet::contains)
@@ -232,9 +209,11 @@ public class EmbeddingServiceImpl implements EmbeddingService {
         }
 
         //6.向量更新成功后，最后更新文档记录（SQLite作为唯一事实源，失败可靠下次上传自愈）
-        embeddingRecordRepository.updateBatch(updateDocRecords);
+        recordRepository.updateBatch(updateDocRecords);
 
         //7.解析出更新文件列表，返回
         return updateFiles;
     }
+
+
 }

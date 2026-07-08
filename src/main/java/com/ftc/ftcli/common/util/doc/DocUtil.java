@@ -50,38 +50,23 @@ public class DocUtil {
     /**
      * 判断文档内容是否发生更新
      *
-     * @param docEntry           文件名MD5-文档Map.Entry
-     * @param existDocRecordsMap 已写入文档记录Map
+     * @param doc       文档
+     * @param docRecord 文档记录
      * @return 是否发生更新
      */
-    public static boolean isDocContentChange(Map.Entry<String, Document> docEntry, Map<String, EmbeddingRecordEntity> existDocRecordsMap) {
+    public static boolean isDocContentChange(Document doc, EmbeddingRecordEntity docRecord) {
 
         //1.获取文件名MD5
-        String fileNameMD5 = docEntry.getKey();
+        String fileNameMD5 = getFileNameMD5(doc);
 
-        //2.获取本次导入的文档
-        Document doc = docEntry.getValue();
-
-        //3.获取导入文档内容MD5
+        //2.获取导入文档内容MD5
         String fileContentMD5 = getFileContentMD5(doc);
 
-        //4.获取已写入的文档记录
-        EmbeddingRecordEntity existDocRecord = existDocRecordsMap.get(fileNameMD5);
+        //3.获取已写入文档内容MD5
+        String existFileContentMD5 = docRecord.getFileContentMd5();
 
-        //5.获取已写入文档内容MD5
-        String existFileContentMD5 = existDocRecord.getFileContentMd5();
-
-        //6.判定文档内容是否发生更新
-        if (!fileContentMD5.equals(existFileContentMD5)) {
-
-            //7.设置新增的文档内容MD5
-            existDocRecord.setFileContentMd5(fileContentMD5);
-
-            //8.返回
-            return true;
-        } else {
-            return false;
-        }
+        //4.判定文档内容是否发生更新
+        return !fileContentMD5.equals(existFileContentMD5);
     }
 
     /**
