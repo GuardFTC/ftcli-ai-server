@@ -1,8 +1,8 @@
 package com.ftc.ftcli.config.ai.embedding;
 
 import com.ftc.ftcli.common.enums.doc.DocMetaDataKeyEnum;
-import com.ftc.ftcli.common.util.doc.ingestor.DocIngestorFactory;
-import com.ftc.ftcli.common.util.doc.ingestor.IIngestor;
+import com.ftc.ftcli.ai.embedding.doc_ingestor.DocIngestorFactory;
+import com.ftc.ftcli.ai.embedding.doc_ingestor.IIngestor;
 import com.ftc.ftcli.properties.embedding.IngestorProperties;
 import dev.langchain4j.data.document.DocumentSplitter;
 import dev.langchain4j.data.segment.TextSegment;

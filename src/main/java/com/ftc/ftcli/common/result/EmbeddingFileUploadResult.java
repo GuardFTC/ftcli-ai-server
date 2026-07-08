@@ -1,4 +1,4 @@
-package com.ftc.ftcli.entity.result;
+package com.ftc.ftcli.common.result;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;

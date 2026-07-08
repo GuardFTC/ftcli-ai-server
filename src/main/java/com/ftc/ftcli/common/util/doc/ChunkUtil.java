@@ -3,7 +3,7 @@ package com.ftc.ftcli.common.util.doc;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.crypto.digest.DigestUtil;
 import com.ftc.ftcli.common.enums.doc.DocMetaDataKeyEnum;
-import com.ftc.ftcli.common.enums.doc.SegmentMetaDataKeyEnum;
+import com.ftc.ftcli.common.enums.doc.ChunkMetaDataKeyEnum;
 import com.ftc.ftcli.entity.embedding.EmbeddingChunkRecordEntity;
 import dev.langchain4j.data.segment.TextSegment;
 
@@ -12,7 +12,7 @@ import dev.langchain4j.data.segment.TextSegment;
  * @date: 2026-07-07 17:47:06
  * @describe: chunk工具类
  */
-public class SegmentUtil {
+public class ChunkUtil {
 
     /**
      * 文档切片转换为EmbeddingChunkRecordEntity
@@ -23,8 +23,8 @@ public class SegmentUtil {
     public static EmbeddingChunkRecordEntity chunk2Record(TextSegment segment) {
         return EmbeddingChunkRecordEntity.builder()
                 .fileNameMd5(segment.metadata().getString(DocMetaDataKeyEnum.FILE_NAME_MD5.getKey()))
-                .chunkIndex(segment.metadata().getInteger(SegmentMetaDataKeyEnum.CHUNK_INDEX.getKey()))
-                .chunkContentMd5(segment.metadata().getString(SegmentMetaDataKeyEnum.CHUNK_CONTENT_MD5.getKey()))
+                .chunkIndex(segment.metadata().getInteger(ChunkMetaDataKeyEnum.CHUNK_INDEX.getKey()))
+                .chunkContentMd5(segment.metadata().getString(ChunkMetaDataKeyEnum.CHUNK_CONTENT_MD5.getKey()))
                 .build();
     }
 

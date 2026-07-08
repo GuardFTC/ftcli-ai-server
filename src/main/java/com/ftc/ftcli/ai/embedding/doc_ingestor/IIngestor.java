@@ -1,4 +1,4 @@
-package com.ftc.ftcli.common.util.doc.ingestor;
+package com.ftc.ftcli.ai.embedding.doc_ingestor;
 
 import dev.langchain4j.data.document.Document;
 import dev.langchain4j.data.segment.TextSegment;

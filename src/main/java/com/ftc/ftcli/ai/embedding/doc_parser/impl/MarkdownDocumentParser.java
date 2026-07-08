@@ -1,4 +1,4 @@
-package com.ftc.ftcli.common.util.doc.doc_parser.impl;
+package com.ftc.ftcli.ai.embedding.doc_parser.impl;
 
 import com.ftc.ftcli.common.enums.doc.DocIngestorTypeEnum;
 import com.ftc.ftcli.common.enums.doc.DocMetaDataKeyEnum;

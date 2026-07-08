@@ -1,4 +1,4 @@
-package com.ftc.ftcli.common.util.doc.doc_loader;
+package com.ftc.ftcli.ai.embedding.doc_loader;
 
 import com.ftc.ftcli.common.enums.doc.DocLoaderEnum;
 import org.springframework.beans.BeansException;

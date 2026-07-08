@@ -3,7 +3,7 @@ package com.ftc.ftcli.service.ai.impl;
 import cn.hutool.core.util.IdUtil;
 import com.ftc.ftcli.ai.service.AiServiceHolder;
 import com.ftc.ftcli.common.util.ai.AiTraceLog;
-import com.ftc.ftcli.entity.payload.ChatPayload;
+import com.ftc.ftcli.common.payload.ChatPayload;
 import com.ftc.ftcli.service.ai.AiChatService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

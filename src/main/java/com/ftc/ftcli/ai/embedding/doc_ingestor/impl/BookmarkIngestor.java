@@ -1,8 +1,8 @@
-package com.ftc.ftcli.common.util.doc.ingestor.impl;
+package com.ftc.ftcli.ai.embedding.doc_ingestor.impl;
 
 import cn.hutool.core.util.StrUtil;
 import com.ftc.ftcli.common.enums.doc.DocIngestorTypeEnum;
-import com.ftc.ftcli.common.util.doc.ingestor.IIngestor;
+import com.ftc.ftcli.ai.embedding.doc_ingestor.IIngestor;
 import dev.langchain4j.data.document.Document;
 import dev.langchain4j.data.segment.TextSegment;
 import org.springframework.stereotype.Component;

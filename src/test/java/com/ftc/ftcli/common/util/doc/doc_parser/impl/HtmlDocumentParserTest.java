@@ -3,6 +3,7 @@ package com.ftc.ftcli.common.util.doc.doc_parser.impl;
 import cn.hutool.core.io.resource.ResourceUtil;
 import cn.hutool.core.lang.Assert;
 import cn.hutool.core.util.StrUtil;
+import com.ftc.ftcli.ai.embedding.doc_parser.impl.HtmlDocumentParser;
 import dev.langchain4j.data.document.Document;
 import org.junit.jupiter.api.Test;
 

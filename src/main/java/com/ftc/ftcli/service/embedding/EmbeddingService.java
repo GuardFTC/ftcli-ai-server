@@ -1,7 +1,7 @@
 package com.ftc.ftcli.service.embedding;
 
-import com.ftc.ftcli.entity.payload.EmbeddingFileUploadPayload;
-import com.ftc.ftcli.entity.result.EmbeddingFileUploadResult;
+import com.ftc.ftcli.common.payload.EmbeddingFileUploadPayload;
+import com.ftc.ftcli.common.result.EmbeddingFileUploadResult;
 import com.ftc.ftcli.entity.embedding.EmbeddingRecordEntity;
 
 import java.util.List;

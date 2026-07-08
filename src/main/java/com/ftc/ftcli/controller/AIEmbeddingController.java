@@ -1,9 +1,9 @@
 package com.ftc.ftcli.controller;
 
-import com.ftc.ftcli.entity.payload.EmbeddingFileUploadPayload;
-import com.ftc.ftcli.entity.result.EmbeddingFileUploadResult;
+import com.ftc.ftcli.common.payload.EmbeddingFileUploadPayload;
+import com.ftc.ftcli.common.result.EmbeddingFileUploadResult;
 import com.ftc.ftcli.entity.embedding.EmbeddingRecordEntity;
-import com.ftc.ftcli.entity.result.RestfulResult;
+import com.ftc.ftcli.common.result.RestfulResult;
 import com.ftc.ftcli.service.embedding.EmbeddingService;
 import com.ftc.ftcli.service.chroma.ChromaService;
 import io.swagger.v3.oas.annotations.Operation;

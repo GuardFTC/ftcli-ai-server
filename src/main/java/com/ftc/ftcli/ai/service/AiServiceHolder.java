@@ -2,7 +2,7 @@ package com.ftc.ftcli.ai.service;
 
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.io.resource.ResourceUtil;
-import com.ftc.ftcli.ai.store.SqliteChatMemoryStore;
+import com.ftc.ftcli.ai.chat_memory.SqliteChatMemoryStore;
 import com.ftc.ftcli.properties.chat.ChatMemoryProperties;
 import com.ftc.ftcli.service.ai.AISkillService;
 import dev.langchain4j.memory.chat.TokenWindowChatMemory;

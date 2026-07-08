@@ -1,7 +1,7 @@
-package com.ftc.ftcli.common.util.doc.ingestor.impl;
+package com.ftc.ftcli.ai.embedding.doc_ingestor.impl;
 
 import com.ftc.ftcli.common.enums.doc.DocIngestorTypeEnum;
-import com.ftc.ftcli.common.util.doc.ingestor.IIngestor;
+import com.ftc.ftcli.ai.embedding.doc_ingestor.IIngestor;
 import com.ftc.ftcli.properties.embedding.IngestorProperties;
 import dev.langchain4j.data.document.Document;
 import dev.langchain4j.data.document.DocumentSplitter;

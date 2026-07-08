@@ -1,4 +1,4 @@
-package com.ftc.ftcli.ai.tool;
+package com.ftc.ftcli.common.enums.tool;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;

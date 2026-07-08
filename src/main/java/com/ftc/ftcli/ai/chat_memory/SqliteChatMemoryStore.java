@@ -1,4 +1,4 @@
-package com.ftc.ftcli.ai.store;
+package com.ftc.ftcli.ai.chat_memory;
 
 import cn.hutool.core.util.StrUtil;
 import com.ftc.ftcli.entity.chat.ChatMemoryEntity;

@@ -1,4 +1,4 @@
-package com.ftc.ftcli.common.util.doc.doc_loader;
+package com.ftc.ftcli.ai.embedding.doc_loader;
 
 import cn.hutool.core.util.StrUtil;
 import com.ftc.ftcli.common.enums.doc.DocLoaderEnum;

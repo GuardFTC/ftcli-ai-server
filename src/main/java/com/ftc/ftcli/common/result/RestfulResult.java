@@ -1,4 +1,4 @@
-package com.ftc.ftcli.entity.result;
+package com.ftc.ftcli.common.result;
 
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONUtil;

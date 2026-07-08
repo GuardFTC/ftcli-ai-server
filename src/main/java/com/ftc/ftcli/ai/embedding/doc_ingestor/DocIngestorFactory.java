@@ -1,4 +1,4 @@
-package com.ftc.ftcli.common.util.doc.ingestor;
+package com.ftc.ftcli.ai.embedding.doc_ingestor;
 
 import com.ftc.ftcli.common.enums.doc.DocIngestorTypeEnum;
 import lombok.RequiredArgsConstructor;

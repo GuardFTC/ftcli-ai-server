@@ -1,8 +1,8 @@
-package com.ftc.ftcli.common.util.doc.doc_parser;
+package com.ftc.ftcli.ai.embedding.doc_parser;
 
 import com.ftc.ftcli.common.enums.doc.DocParserTypeEnum;
-import com.ftc.ftcli.common.util.doc.doc_parser.impl.HtmlDocumentParser;
-import com.ftc.ftcli.common.util.doc.doc_parser.impl.MarkdownDocumentParser;
+import com.ftc.ftcli.ai.embedding.doc_parser.impl.HtmlDocumentParser;
+import com.ftc.ftcli.ai.embedding.doc_parser.impl.MarkdownDocumentParser;
 import dev.langchain4j.data.document.DocumentParser;
 import dev.langchain4j.data.document.parser.TextDocumentParser;
 import dev.langchain4j.data.document.parser.apache.pdfbox.ApachePdfBoxDocumentParser;

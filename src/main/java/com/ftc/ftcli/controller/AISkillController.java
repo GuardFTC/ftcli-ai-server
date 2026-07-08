@@ -1,6 +1,6 @@
 package com.ftc.ftcli.controller;
 
-import com.ftc.ftcli.entity.result.RestfulResult;
+import com.ftc.ftcli.common.result.RestfulResult;
 import com.ftc.ftcli.entity.skill.SkillEntity;
 import com.ftc.ftcli.service.ai.AISkillService;
 import io.swagger.v3.oas.annotations.Operation;

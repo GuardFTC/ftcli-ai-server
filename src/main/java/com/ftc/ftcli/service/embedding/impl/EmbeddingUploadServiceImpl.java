@@ -2,9 +2,9 @@ package com.ftc.ftcli.service.embedding.impl;
 
 import cn.hutool.core.collection.CollUtil;
 import com.ftc.ftcli.common.enums.doc.DocMetaDataKeyEnum;
-import com.ftc.ftcli.common.enums.doc.SegmentMetaDataKeyEnum;
+import com.ftc.ftcli.common.enums.doc.ChunkMetaDataKeyEnum;
 import com.ftc.ftcli.common.util.doc.DocUtil;
-import com.ftc.ftcli.common.util.doc.SegmentUtil;
+import com.ftc.ftcli.common.util.doc.ChunkUtil;
 import com.ftc.ftcli.entity.embedding.EmbeddingChunkRecordEntity;
 import com.ftc.ftcli.entity.embedding.EmbeddingRecordEntity;
 import com.ftc.ftcli.infra.sqlite.repository.EmbeddingChunkRecordRepository;
@@ -66,7 +66,7 @@ public class EmbeddingUploadServiceImpl implements EmbeddingUploadService {
         List<TextSegment> newChunks = splitDocs(newDocs);
 
         //4.将文档chunk列表解析为Chunk记录列表
-        List<EmbeddingChunkRecordEntity> newChunkRecords = newChunks.stream().map(SegmentUtil::chunk2Record).toList();
+        List<EmbeddingChunkRecordEntity> newChunkRecords = newChunks.stream().map(ChunkUtil::chunk2Record).toList();
 
         //5.将新增文档列表 转换为 新增文档记录列表
         List<EmbeddingRecordEntity> newDocRecords = newDocsMap.entrySet().stream()
@@ -127,7 +127,7 @@ public class EmbeddingUploadServiceImpl implements EmbeddingUploadService {
         List<TextSegment> updateChunks = splitDocs(updateDocs);
 
         //5.将文档chunk列表解析为chunk记录列表
-        List<EmbeddingChunkRecordEntity> updateChunkRecords = updateChunks.stream().map(SegmentUtil::chunk2Record).toList();
+        List<EmbeddingChunkRecordEntity> updateChunkRecords = updateChunks.stream().map(ChunkUtil::chunk2Record).toList();
 
         //6.获取最终更新的chunk列表
         List<TextSegment> finalUpdateChunks = getFinalUpdateChunks(updateDocsNameMD5Set, updateChunks);
@@ -197,8 +197,8 @@ public class EmbeddingUploadServiceImpl implements EmbeddingUploadService {
             for (TextSegment segment : segments) {
 
                 //5.写入文档切片索引、文档切片内容MD5 元数据
-                segment.metadata().put(SegmentMetaDataKeyEnum.CHUNK_INDEX.getKey(), i++);
-                segment.metadata().put(SegmentMetaDataKeyEnum.CHUNK_CONTENT_MD5.getKey(), SegmentUtil.getSegmentTextMD5(segment));
+                segment.metadata().put(ChunkMetaDataKeyEnum.CHUNK_INDEX.getKey(), i++);
+                segment.metadata().put(ChunkMetaDataKeyEnum.CHUNK_CONTENT_MD5.getKey(), ChunkUtil.getSegmentTextMD5(segment));
 
                 //6.添加chunk到文档chunk列表
                 allSegments.add(segment);
@@ -266,8 +266,8 @@ public class EmbeddingUploadServiceImpl implements EmbeddingUploadService {
 
             //5.获取文件名MD5，chunk索引，以及chunk内容MD5
             String fileNameMd5 = chunk.metadata().getString(DocMetaDataKeyEnum.FILE_NAME_MD5.getKey());
-            Integer chunkIndex = chunk.metadata().getInteger(SegmentMetaDataKeyEnum.CHUNK_INDEX.getKey());
-            String chunkContentMd5 = chunk.metadata().getString(SegmentMetaDataKeyEnum.CHUNK_CONTENT_MD5.getKey());
+            Integer chunkIndex = chunk.metadata().getInteger(ChunkMetaDataKeyEnum.CHUNK_INDEX.getKey());
+            String chunkContentMd5 = chunk.metadata().getString(ChunkMetaDataKeyEnum.CHUNK_CONTENT_MD5.getKey());
 
             //6.获取对应的chunk记录
             Map<Integer, EmbeddingChunkRecordEntity> indexMap = chunkRecordMap.getOrDefault(fileNameMd5, Map.of());
@@ -305,7 +305,7 @@ public class EmbeddingUploadServiceImpl implements EmbeddingUploadService {
                 .collect(Collectors.groupingBy(
                         segment -> segment.metadata().getString(DocMetaDataKeyEnum.FILE_NAME_MD5.getKey()),
                         Collectors.mapping(
-                                segment -> segment.metadata().getInteger(SegmentMetaDataKeyEnum.CHUNK_INDEX.getKey()),
+                                segment -> segment.metadata().getInteger(ChunkMetaDataKeyEnum.CHUNK_INDEX.getKey()),
                                 Collectors.toList()
                         )
                 ));
@@ -316,7 +316,7 @@ public class EmbeddingUploadServiceImpl implements EmbeddingUploadService {
             //4.构建删除条件
             Filter filter = and(
                     metadataKey(DocMetaDataKeyEnum.FILE_NAME_MD5.getKey()).isEqualTo(fileMd5),
-                    metadataKey(SegmentMetaDataKeyEnum.CHUNK_INDEX.getKey()).isIn(chunkIndices)
+                    metadataKey(ChunkMetaDataKeyEnum.CHUNK_INDEX.getKey()).isIn(chunkIndices)
             );
 
             //5.添加过滤条件到列表

@@ -1,6 +1,6 @@
 package com.ftc.ftcli.service.ai;
 
-import com.ftc.ftcli.entity.payload.ChatPayload;
+import com.ftc.ftcli.common.payload.ChatPayload;
 import reactor.core.publisher.Flux;
 
 /**
