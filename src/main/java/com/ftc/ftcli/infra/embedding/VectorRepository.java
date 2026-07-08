@@ -1,17 +1,16 @@
 package com.ftc.ftcli.infra.embedding;
 
 import cn.hutool.core.collection.CollUtil;
+import com.ftc.ftcli.properties.embedding.StoreProperties;
 import dev.langchain4j.data.embedding.Embedding;
 import dev.langchain4j.data.segment.TextSegment;
 import dev.langchain4j.model.embedding.EmbeddingModel;
 import dev.langchain4j.model.output.Response;
 import dev.langchain4j.store.embedding.EmbeddingStore;
-import com.ftc.ftcli.properties.embedding.StoreProperties;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -52,23 +51,19 @@ public class VectorRepository {
             return;
         }
 
-        //2.定义所有向量列表
-        List<Embedding> allEmbeddings = new ArrayList<>();
-
-        //3.按批次向量化
+        //2.按批次进行“向量化”与“落库”
         for (int i = 0; i < chunks.size(); i += batchSize) {
 
-            //4.获取当前批次的chunk列表
-            List<TextSegment> batch = chunks.subList(i, Math.min(i + batchSize, chunks.size()));
+            //3.获取当前批次的 chunk 列表
+            List<TextSegment> batchChunks = chunks.subList(i, Math.min(i + batchSize, chunks.size()));
 
-            //5.向量化当前批次
-            Response<List<Embedding>> response = embeddingModel.embedAll(batch);
+            //4.向量化当前批次
+            Response<List<Embedding>> response = embeddingModel.embedAll(batchChunks);
 
-            //6.将当前批次向量写入列表
-            allEmbeddings.addAll(response.content());
+            //5.即刻分批写入向量数据库
+            if (response != null && CollUtil.isNotEmpty(response.content())) {
+                embeddingStore.addAll(response.content(), batchChunks);
+            }
         }
-
-        //7.写入向量数据库
-        embeddingStore.addAll(allEmbeddings, chunks);
     }
 }

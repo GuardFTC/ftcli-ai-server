@@ -1,14 +1,13 @@
 package com.ftc.ftcli.ai.embedding.doc_ingestor.impl;
 
-import com.ftc.ftcli.common.enums.doc.DocIngestorTypeEnum;
 import com.ftc.ftcli.ai.embedding.doc_ingestor.IIngestor;
+import com.ftc.ftcli.common.enums.doc.DocIngestorTypeEnum;
 import com.ftc.ftcli.properties.embedding.IngestorProperties;
 import dev.langchain4j.data.document.Document;
 import dev.langchain4j.data.document.DocumentSplitter;
 import dev.langchain4j.data.document.splitter.DocumentSplitters;
 import dev.langchain4j.data.segment.TextSegment;
 import dev.langchain4j.model.openai.OpenAiTokenCountEstimator;
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -19,10 +18,25 @@ import java.util.List;
  * @describe 通用文档切分器
  */
 @Component
-@RequiredArgsConstructor
 public class UniversalIngestor implements IIngestor {
 
-    private final IngestorProperties ingestorProperties;
+    /**
+     * 通用文档切分器（构造时初始化，复用实例避免重复构建 tokenizer）
+     */
+    private final DocumentSplitter recursiveSplitter;
+
+    /**
+     * 构造方法
+     *
+     * @param ingestorProperties 配置属性
+     */
+    public UniversalIngestor(IngestorProperties ingestorProperties) {
+        this.recursiveSplitter = DocumentSplitters.recursive(
+                ingestorProperties.getMaxSegmentSize(),
+                ingestorProperties.getOverlap(),
+                new OpenAiTokenCountEstimator(ingestorProperties.getTokenEstimatorModel())
+        );
+    }
 
     @Override
     public String getDocIngestorType() {
@@ -31,15 +45,6 @@ public class UniversalIngestor implements IIngestor {
 
     @Override
     public List<TextSegment> split(Document document) {
-
-        //1.定义通用文档切分规则
-        DocumentSplitter recursiveSplitter = DocumentSplitters.recursive(
-                ingestorProperties.getMaxSegmentSize(),
-                ingestorProperties.getOverlap(),
-                new OpenAiTokenCountEstimator(ingestorProperties.getTokenEstimatorModel())
-        );
-
-        //2.切分文档返回
         return recursiveSplitter.split(document);
     }
 }
