@@ -6,7 +6,9 @@ import dev.langchain4j.data.segment.TextSegment;
 import dev.langchain4j.model.embedding.EmbeddingModel;
 import dev.langchain4j.model.output.Response;
 import dev.langchain4j.store.embedding.EmbeddingStore;
+import com.ftc.ftcli.properties.embedding.StoreProperties;
 import lombok.RequiredArgsConstructor;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
@@ -19,16 +21,14 @@ import java.util.List;
  */
 @Component
 @RequiredArgsConstructor
+@EnableConfigurationProperties(StoreProperties.class)
 public class VectorRepository {
+
+    private final StoreProperties storeProperties;
 
     private final EmbeddingModel embeddingModel;
 
     private final EmbeddingStore<TextSegment> embeddingStore;
-
-    /**
-     * 默认批次大小
-     */
-    private static final int DEFAULT_BATCH_SIZE = 50;
 
     /**
      * 批量向量化并写入向量数据库
@@ -36,7 +36,7 @@ public class VectorRepository {
      * @param chunks 待写入的chunk列表
      */
     public void batchAddAll(List<TextSegment> chunks) {
-        batchAddAll(chunks, DEFAULT_BATCH_SIZE);
+        batchAddAll(chunks, storeProperties.getBatchSize());
     }
 
     /**
