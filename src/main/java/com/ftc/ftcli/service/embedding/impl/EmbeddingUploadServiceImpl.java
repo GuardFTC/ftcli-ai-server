@@ -197,7 +197,7 @@ public class EmbeddingUploadServiceImpl implements EmbeddingUploadService {
             for (TextSegment segment : segments) {
 
                 //5.写入文档切片索引、文档切片内容MD5 元数据
-                segment.metadata().put(SegmentMetaDataKeyEnum.CHUNK_INDEX.getKey(), String.valueOf(i++));
+                segment.metadata().put(SegmentMetaDataKeyEnum.CHUNK_INDEX.getKey(), i++);
                 segment.metadata().put(SegmentMetaDataKeyEnum.CHUNK_CONTENT_MD5.getKey(), SegmentUtil.getSegmentTextMD5(segment));
 
                 //6.添加chunk到文档chunk列表
