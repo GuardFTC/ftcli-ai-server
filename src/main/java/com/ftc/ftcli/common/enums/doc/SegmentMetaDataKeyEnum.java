@@ -13,12 +13,12 @@ import lombok.Getter;
 public enum SegmentMetaDataKeyEnum {
 
     /**
-     * 切片索引
+     * 文档切片索引
      */
     CHUNK_INDEX("chunk_index"),
 
     /**
-     * 文档切片索引
+     * 文档切片内容MD5
      */
     CHUNK_CONTENT_MD5("chunk_content_md5"),
     ;

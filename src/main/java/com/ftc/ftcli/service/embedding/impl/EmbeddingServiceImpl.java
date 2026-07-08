@@ -4,32 +4,27 @@ import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.StrUtil;
 import com.ftc.ftcli.common.enums.doc.DocLoaderEnum;
 import com.ftc.ftcli.common.enums.doc.DocMetaDataKeyEnum;
-import com.ftc.ftcli.common.enums.doc.SegmentMetaDataKeyEnum;
 import com.ftc.ftcli.common.util.doc.DocUtil;
-import com.ftc.ftcli.common.util.doc.SegmentUtil;
 import com.ftc.ftcli.common.util.doc.doc_loader.DocLoaderFactory;
 import com.ftc.ftcli.common.util.doc.doc_loader.IDocLoader;
-import com.ftc.ftcli.entity.embedding.EmbeddingChunkRecordEntity;
+import com.ftc.ftcli.entity.embedding.EmbeddingRecordEntity;
 import com.ftc.ftcli.entity.payload.EmbeddingFileUploadPayload;
 import com.ftc.ftcli.entity.result.EmbeddingFileUploadResult;
-import com.ftc.ftcli.entity.embedding.EmbeddingRecordEntity;
 import com.ftc.ftcli.infra.sqlite.repository.EmbeddingChunkRecordRepository;
 import com.ftc.ftcli.infra.sqlite.repository.EmbeddingRecordRepository;
 import com.ftc.ftcli.infra.sqlite.store.EmbeddingRecordStore;
 import com.ftc.ftcli.service.embedding.EmbeddingService;
+import com.ftc.ftcli.service.embedding.EmbeddingUploadService;
 import dev.langchain4j.data.document.Document;
 import dev.langchain4j.data.document.DocumentSplitter;
-import dev.langchain4j.data.embedding.Embedding;
 import dev.langchain4j.data.segment.TextSegment;
 import dev.langchain4j.model.embedding.EmbeddingModel;
-import dev.langchain4j.model.output.Response;
 import dev.langchain4j.store.embedding.EmbeddingStore;
 import dev.langchain4j.store.embedding.filter.Filter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -58,6 +53,8 @@ public class EmbeddingServiceImpl implements EmbeddingService {
     private final EmbeddingChunkRecordRepository embeddingChunkRecordRepository;
 
     private final EmbeddingRecordStore embeddingRecordStore;
+
+    private final EmbeddingUploadService embeddingUploadService;
 
     @Override
     public List<EmbeddingRecordEntity> getDocs() {
@@ -92,53 +89,53 @@ public class EmbeddingServiceImpl implements EmbeddingService {
             return new EmbeddingFileUploadResult();
         }
 
-        //2.获取新增文档名MD5-文档Map
-        Map<String, Document> newDocMap = getNewDocMap(path);
-        if (CollUtil.isEmpty(newDocMap)) {
+        //2.获取上传文档名MD5-文档Map
+        Map<String, Document> uploadDocMap = getUploadDocMap(path);
+        if (CollUtil.isEmpty(uploadDocMap)) {
             log.error("[AI] 新增文档 文档不存在:[{}]", path);
         } else {
-            log.info("[AI] 新增文档 加载文档数量:[{}]", newDocMap.size());
+            log.info("[AI] 新增文档 加载文档数量:[{}]", uploadDocMap.size());
         }
 
-        //5.获取已存在文档记录Map
-        Map<String, EmbeddingRecordEntity> existDocRecordsMap = getExistDocRecordsMap(newDocMap);
+        //3.获取已存在文档记录Map
+        Map<String, EmbeddingRecordEntity> uploadDocRecordMap = getUploadDocRecordMap(uploadDocMap);
 
-        //6.按是否已存在分组文档
-        Map<Boolean, Map<String, Document>> partitionedDocsMap = partitionedDocsMap(existDocRecordsMap, newDocMap);
+        //4.按是否已存在分组文档
+        Map<Boolean, Map<String, Document>> partitionedDocsMap = getPartitionedDocsMap(uploadDocRecordMap, uploadDocMap);
 
-        //7.获取新增文档
+        //5.获取新增文档
         Map<String, Document> newDocsMap = partitionedDocsMap.getOrDefault(false, Map.of());
         log.info("[AI] 新增文档 新增文档数量:[{}]", newDocsMap.size());
 
-        //8.新增文档，写入文档记录
-        List<String> newFiles = addNewDocs(newDocsMap);
+        //6.新增文档，写入文档记录
+        List<String> newFiles = embeddingUploadService.addDocs(newDocsMap);
 
-        //9.获取已存在文档
+        //7.获取已存在文档
         Map<String, Document> existDocsMap = partitionedDocsMap.getOrDefault(true, Map.of());
         log.info("[AI] 新增文档 已存在文档数量:[{}]", existDocsMap.size());
 
         //10.过滤出文档内容发生更新的文档名称MD5
         Set<String> updateDocsNameSet = existDocsMap.entrySet()
                 .stream()
-                .filter(entry -> DocUtil.isDocContentChange(entry, existDocRecordsMap))
+                .filter(entry -> DocUtil.isDocContentChange(entry, uploadDocRecordMap))
                 .map(Map.Entry::getKey)
                 .collect(Collectors.toSet());
-        log.info("[AI] 新增文档 文档内容更新数量:[{}]", updateDocsNameSet.size());
+        log.info("[AI] 新增文档 内容更新文档数量:[{}]", updateDocsNameSet.size());
 
         //11.已存在文档，如果文档内容发生更新，写入文档记录
-        List<String> updateFiles = updateChangeDocs(updateDocsNameSet, existDocsMap, existDocRecordsMap);
+        List<String> updateFiles = updateChangeDocs(updateDocsNameSet, existDocsMap, uploadDocRecordMap);
 
         //12.构建结果返回
         return new EmbeddingFileUploadResult(newFiles, updateFiles);
     }
 
     /**
-     * 获取新增文档名MD5-文档Map
+     * 获取上传文档名MD5-文档Map
      *
      * @param path 文件路径/URL
-     * @return 新增文档名MD5-文档Map
+     * @return 上传文档名MD5-文档Map
      */
-    private static Map<String, Document> getNewDocMap(String path) {
+    private static Map<String, Document> getUploadDocMap(String path) {
 
         //1.通过path获取文档加载类型
         DocLoaderEnum docLoadEnum = IDocLoader.getTypeByPath(path);
@@ -151,21 +148,21 @@ public class EmbeddingServiceImpl implements EmbeddingService {
     }
 
     /**
-     * 获取已存在文档记录Map
+     * 获取上传文档记录Map
      *
-     * @param newDocMap 新增文档名MD5-文档Map
-     * @return 文档名MD5-文档记录Map
+     * @param uploadDocMap 上传文档名MD5-文档Map
+     * @return 上传文档名MD5-文档记录Map
      */
-    private Map<String, EmbeddingRecordEntity> getExistDocRecordsMap(Map<String, Document> newDocMap) {
+    private Map<String, EmbeddingRecordEntity> getUploadDocRecordMap(Map<String, Document> uploadDocMap) {
 
         //1.获取上传文档名MD5 Set
-        Set<String> docNameMD5Set = newDocMap.keySet();
+        Set<String> uploadDocNameMD5Set = uploadDocMap.keySet();
 
         //2.根据上传文档名MD5 Set，查询已写入的文档记录
-        Set<EmbeddingRecordEntity> existDocsRecord = embeddingRecordRepository.findAllByMd5(docNameMD5Set);
+        Set<EmbeddingRecordEntity> uploadDocRecords = embeddingRecordRepository.findAllByMd5(uploadDocNameMD5Set);
 
         //3.解析为已写入文档名MD5-文档记录 Map，返回
-        return existDocsRecord.stream()
+        return uploadDocRecords.stream()
                 .collect(Collectors.toMap(
                         EmbeddingRecordEntity::getFileNameMd5,
                         doc -> doc
@@ -175,87 +172,21 @@ public class EmbeddingServiceImpl implements EmbeddingService {
     /**
      * 按是否已存在分组文档
      *
-     * @param existDocRecordsMap 已存在文档记录Map
-     * @param docsMap            文档Map
+     * @param uploadDocRecordMap 上传文档名MD5-文档记录Map
+     * @param uploadDocMap       上传文档名MD5-文档Map
      * @return 是否已存在-文档名称MD5-文档Map
      */
-    private static Map<Boolean, Map<String, Document>> partitionedDocsMap(Map<String, EmbeddingRecordEntity> existDocRecordsMap, Map<String, Document> docsMap) {
+    private static Map<Boolean, Map<String, Document>> getPartitionedDocsMap(Map<String, EmbeddingRecordEntity> uploadDocRecordMap, Map<String, Document> uploadDocMap) {
 
         //1.获取已存在文档记录KeySet
-        Set<String> existDocsNameMD5Set = existDocRecordsMap.keySet();
+        Set<String> uploadDocNameMD5Set = uploadDocRecordMap.keySet();
 
         //2.按是否已存在分组文档，返回
-        return docsMap.entrySet().stream()
+        return uploadDocMap.entrySet().stream()
                 .collect(Collectors.partitioningBy(
-                        entry -> existDocsNameMD5Set.contains(entry.getKey()),
+                        entry -> uploadDocNameMD5Set.contains(entry.getKey()),
                         Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)
                 ));
-    }
-
-    /**
-     * 将新增文档写入向量数据库，并保存文档记录
-     *
-     * @param newDocsMap 新文档
-     * @return 新增文件列表
-     */
-    List<String> addNewDocs(Map<String, Document> newDocsMap) {
-
-        //1.为空直接返回
-        if (CollUtil.isEmpty(newDocsMap)) {
-            return List.of();
-        }
-
-        //2.转换为EmbeddingRecordEntity
-        List<EmbeddingRecordEntity> newRecords = newDocsMap.entrySet().stream()
-                .map(DocUtil::doc2Record)
-                .toList();
-
-        //3.解析出新增文件列表
-        List<String> newFiles = newRecords.stream()
-                .map(EmbeddingRecordEntity::getFullPath)
-                .toList();
-
-        //4.解析出新增文档列表
-        List<Document> newDocs = newDocsMap.values().stream().toList();
-
-        //5.写入向量数据库前，先按file_name_md5清理可能残留的旧向量（保证ingest幂等，防止重试产生重复向量），再写入新向量
-        List<TextSegment> segments = new ArrayList<>();
-        try {
-
-            //6.先删除该文档的向量，确保幂等
-            Filter filter = metadataKey(DocMetaDataKeyEnum.FILE_NAME_MD5.getKey()).isIn(newDocsMap.keySet());
-            embeddingStore.removeAll(filter);
-
-            //7.循环切分文档
-            for (Document newDoc : newDocs) {
-                List<TextSegment> textSegments = documentSplitter.split(newDoc);
-
-                int i = 0;
-                for (TextSegment textSegment : textSegments) {
-                    textSegment.metadata().put(SegmentMetaDataKeyEnum.CHUNK_INDEX.getKey(), String.valueOf(i++));
-                    textSegment.metadata().put(SegmentMetaDataKeyEnum.CHUNK_CONTENT_MD5.getKey(), SegmentUtil.getSegmentTextMD5(textSegment));
-                    segments.add(textSegment);
-                }
-            }
-
-            //8.向量化
-            Response<List<Embedding>> embeddingsResponse = embeddingModel.embedAll(segments);
-
-            //9.写入向量数据库
-            embeddingStore.addAll(embeddingsResponse.content(), segments);
-        } catch (Exception e) {
-            log.error("[AI] 新增文档 向量写入失败，本次不写入文档记录，可重新上传重试。文件:[{}]", newFiles, e);
-            throw e;
-        }
-
-        //解析为记录
-        List<EmbeddingChunkRecordEntity> chunkRecords = segments.stream().map(SegmentUtil::chunk2Record).toList();
-
-        //10.原子保存文档记录及Chunk记录
-        embeddingRecordStore.saveRecords(newRecords, chunkRecords);
-
-        //7.解析出新增文件列表，返回
-        return newFiles;
     }
 
     /**
