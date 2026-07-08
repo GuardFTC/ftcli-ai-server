@@ -149,34 +149,38 @@ public class EmbeddingUploadServiceImpl implements EmbeddingUploadService {
                 .map(uploadDocRecordMap::get)
                 .toList();
 
-        //10.解析出更新文件列表
+        //11.解析出更新文件列表
         List<String> updateFiles = updateDocRecords.stream()
                 .map(EmbeddingRecordEntity::getFullPath)
                 .toList();
 
-        //11.进行向量写入
+        //12.进行向量写入
         try {
 
-            //12.构建删除条件
+            //13.构建删除条件
             Filter filter = buildDelteChunkFilter(addOrUpdateChunks, removeChunks);
 
-            //13.先删除该文档的向量，避免数据库写入失败导致的孤儿向量，确保幂等
+            //14.先删除该文档的向量，避免数据库写入失败导致的孤儿向量，确保幂等
             embeddingStore.removeAll(filter);
 
-            //14.向量化
-            Response<List<Embedding>> embeddingsResponse = embeddingModel.embedAll(addOrUpdateChunks);
+            //15.如果 新增/更新的chunk列表 不为空
+            if (CollUtil.isNotEmpty(addOrUpdateChunks)) {
 
-            //15.写入向量数据库
-            embeddingStore.addAll(embeddingsResponse.content(), addOrUpdateChunks);
+                //16.向量化
+                Response<List<Embedding>> embeddingsResponse = embeddingModel.embedAll(addOrUpdateChunks);
 
-            //15.原子性更新文档记录以及文档chunk记录
+                //17.写入向量数据库
+                embeddingStore.addAll(embeddingsResponse.content(), addOrUpdateChunks);
+            }
+
+            //18.原子性更新文档记录以及文档chunk记录
             embeddingRecordStore.updateRecords(updateDocRecords, memoryUpdateChunkRecords, updateDocsNameMD5Set);
         } catch (Exception e) {
             log.error("[AI] 新增文档 向量更新失败，本次不更新文档记录，可重新上传重试。文件:[{}]", updateFiles, e);
             throw e;
         }
 
-        //16.返回
+        //19.返回
         return updateFiles;
     }
 
