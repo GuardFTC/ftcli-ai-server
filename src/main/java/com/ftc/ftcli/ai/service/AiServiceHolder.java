@@ -3,8 +3,8 @@ package com.ftc.ftcli.ai.service;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.io.resource.ResourceUtil;
 import com.ftc.ftcli.ai.chat_memory.SqliteChatMemoryStore;
+import com.ftc.ftcli.ai.skill.SkillLoader;
 import com.ftc.ftcli.properties.chat.ChatMemoryProperties;
-import com.ftc.ftcli.service.ai.AISkillService;
 import dev.langchain4j.memory.chat.TokenWindowChatMemory;
 import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.model.chat.StreamingChatModel;
@@ -57,7 +57,7 @@ public class AiServiceHolder {
 
     private final ChatMemoryProperties chatMemoryProperties;
 
-    private final AISkillService aiSkillService;
+    private final SkillLoader skillLoader;
 
     @Getter
     private volatile WebAiService webAiService;
@@ -76,7 +76,7 @@ public class AiServiceHolder {
     public synchronized void buildAiService() {
 
         //1.加载Skills
-        Skills skills = aiSkillService.loadSkills();
+        Skills skills = skillLoader.loadSkills();
 
         //2.获取ToolProviders
         ArrayList<ToolProvider> toolProviders = null == skills ?
