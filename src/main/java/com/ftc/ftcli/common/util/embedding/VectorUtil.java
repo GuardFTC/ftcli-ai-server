@@ -1,4 +1,4 @@
-package com.ftc.ftcli.infra.embedding;
+package com.ftc.ftcli.common.util.embedding;
 
 import cn.hutool.core.collection.CollUtil;
 import com.ftc.ftcli.properties.embedding.StoreProperties;
@@ -21,7 +21,7 @@ import java.util.List;
 @Component
 @RequiredArgsConstructor
 @EnableConfigurationProperties(StoreProperties.class)
-public class VectorRepository {
+public class VectorUtil {
 
     private final StoreProperties storeProperties;
 

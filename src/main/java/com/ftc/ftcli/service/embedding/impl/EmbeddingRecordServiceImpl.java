@@ -1,9 +1,10 @@
-package com.ftc.ftcli.infra.sqlite.store;
+package com.ftc.ftcli.service.embedding.impl;
 
 import com.ftc.ftcli.entity.embedding.EmbeddingChunkRecordEntity;
 import com.ftc.ftcli.entity.embedding.EmbeddingRecordEntity;
 import com.ftc.ftcli.infra.sqlite.repository.EmbeddingChunkRecordRepository;
 import com.ftc.ftcli.infra.sqlite.repository.EmbeddingRecordRepository;
+import com.ftc.ftcli.service.embedding.EmbeddingRecordService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -20,18 +21,13 @@ import java.util.Set;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class EmbeddingRecordStore {
+public class EmbeddingRecordServiceImpl implements EmbeddingRecordService {
 
     private final EmbeddingRecordRepository recordRepository;
 
     private final EmbeddingChunkRecordRepository chunkRecordRepository;
 
-    /**
-     * 原子保存文档记录及其Chunk记录
-     *
-     * @param docRecords   待保存的文档记录集合
-     * @param chunkRecords 待保存的文档Chunk记录集合
-     */
+    @Override
     @Transactional(rollbackFor = Exception.class)
     public void saveRecords(List<EmbeddingRecordEntity> docRecords, List<EmbeddingChunkRecordEntity> chunkRecords) {
 
@@ -42,12 +38,7 @@ public class EmbeddingRecordStore {
         chunkRecordRepository.saveBatch(chunkRecords);
     }
 
-    /**
-     * 原子删除文档记录及其关联的全部Chunk记录
-     *
-     * @param id          文档记录ID
-     * @param fileNameMd5 文件名MD5
-     */
+    @Override
     @Transactional(rollbackFor = Exception.class)
     public void removeRecords(Long id, String fileNameMd5) {
 
@@ -58,13 +49,7 @@ public class EmbeddingRecordStore {
         chunkRecordRepository.deleteByFileNameMd5(fileNameMd5);
     }
 
-    /**
-     * 原子更新文档记录及其关联的Chunk记录
-     *
-     * @param updateDocRecords     待更新的文档记录集合
-     * @param updateChunkRecords   待更新的文档Chunk记录集合
-     * @param updateDocsNameMD5Set 待更新的文档记录的文件名MD5集合
-     */
+    @Override
     @Transactional(rollbackFor = Exception.class)
     public void updateRecords(List<EmbeddingRecordEntity> updateDocRecords, List<EmbeddingChunkRecordEntity> updateChunkRecords, Set<String> updateDocsNameMD5Set) {
 

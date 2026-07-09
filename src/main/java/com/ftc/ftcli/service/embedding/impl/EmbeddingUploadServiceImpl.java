@@ -1,15 +1,15 @@
 package com.ftc.ftcli.service.embedding.impl;
 
 import cn.hutool.core.collection.CollUtil;
+import com.ftc.ftcli.common.util.embedding.VectorUtil;
 import com.ftc.ftcli.common.enums.doc.ChunkMetaDataKeyEnum;
 import com.ftc.ftcli.common.enums.doc.DocMetaDataKeyEnum;
 import com.ftc.ftcli.common.util.embedding.ChunkUtil;
 import com.ftc.ftcli.common.util.embedding.DocUtil;
 import com.ftc.ftcli.entity.embedding.EmbeddingChunkRecordEntity;
 import com.ftc.ftcli.entity.embedding.EmbeddingRecordEntity;
-import com.ftc.ftcli.infra.embedding.VectorRepository;
 import com.ftc.ftcli.infra.sqlite.repository.EmbeddingChunkRecordRepository;
-import com.ftc.ftcli.infra.sqlite.store.EmbeddingRecordStore;
+import com.ftc.ftcli.service.embedding.EmbeddingRecordService;
 import com.ftc.ftcli.service.embedding.EmbeddingUploadService;
 import dev.langchain4j.data.document.Document;
 import dev.langchain4j.data.document.DocumentSplitter;
@@ -43,9 +43,9 @@ public class EmbeddingUploadServiceImpl implements EmbeddingUploadService {
 
     private final EmbeddingChunkRecordRepository chunkRecordRepository;
 
-    private final VectorRepository vectorRepository;
+    private final VectorUtil vectorUtil;
 
-    private final EmbeddingRecordStore embeddingRecordStore;
+    private final EmbeddingRecordService recordServiceImpl;
 
     @Override
     public List<String> addDocs(Map<String, Document> newDocsMap) {
@@ -82,10 +82,10 @@ public class EmbeddingUploadServiceImpl implements EmbeddingUploadService {
             embeddingStore.removeAll(filter);
 
             //9.批量向量化并写入向量数据库
-            vectorRepository.batchAddAll(newChunks);
+            vectorUtil.batchAddAll(newChunks);
 
             //10.原子保存文档记录及Chunk记录
-            embeddingRecordStore.saveRecords(newDocRecords, newChunkRecords);
+            recordServiceImpl.saveRecords(newDocRecords, newChunkRecords);
         } catch (Exception e) {
             log.error("[AI] 新增文档 向量写入失败，本次不写入文档记录，可重新上传重试。文件:[{}]", newFiles, e);
             throw e;
@@ -162,11 +162,11 @@ public class EmbeddingUploadServiceImpl implements EmbeddingUploadService {
             if (CollUtil.isNotEmpty(addOrUpdateChunks)) {
 
                 //16.批量向量化并写入向量数据库
-                vectorRepository.batchAddAll(addOrUpdateChunks);
+                vectorUtil.batchAddAll(addOrUpdateChunks);
             }
 
             //17.原子性更新文档记录以及文档chunk记录
-            embeddingRecordStore.updateRecords(updateDocRecords, memoryUpdateChunkRecords, updateDocsNameMD5Set);
+            recordServiceImpl.updateRecords(updateDocRecords, memoryUpdateChunkRecords, updateDocsNameMD5Set);
         } catch (Exception e) {
             log.error("[AI] 新增文档 向量更新失败，本次不更新文档记录，可重新上传重试。文件:[{}]", updateFiles, e);
             throw e;

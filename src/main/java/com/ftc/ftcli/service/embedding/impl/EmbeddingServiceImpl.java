@@ -2,15 +2,15 @@ package com.ftc.ftcli.service.embedding.impl;
 
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.StrUtil;
-import com.ftc.ftcli.common.enums.doc.DocLoaderEnum;
-import com.ftc.ftcli.common.enums.doc.DocMetaDataKeyEnum;
 import com.ftc.ftcli.ai.embedding.doc_loader.DocLoaderFactory;
 import com.ftc.ftcli.ai.embedding.doc_loader.IDocLoader;
-import com.ftc.ftcli.entity.embedding.EmbeddingRecordEntity;
+import com.ftc.ftcli.common.enums.doc.DocLoaderEnum;
+import com.ftc.ftcli.common.enums.doc.DocMetaDataKeyEnum;
 import com.ftc.ftcli.common.payload.EmbeddingFileUploadPayload;
 import com.ftc.ftcli.common.result.EmbeddingFileUploadResult;
+import com.ftc.ftcli.entity.embedding.EmbeddingRecordEntity;
 import com.ftc.ftcli.infra.sqlite.repository.EmbeddingRecordRepository;
-import com.ftc.ftcli.infra.sqlite.store.EmbeddingRecordStore;
+import com.ftc.ftcli.service.embedding.EmbeddingRecordService;
 import com.ftc.ftcli.service.embedding.EmbeddingService;
 import com.ftc.ftcli.service.embedding.EmbeddingUploadService;
 import dev.langchain4j.data.document.Document;
@@ -42,7 +42,7 @@ public class EmbeddingServiceImpl implements EmbeddingService {
 
     private final EmbeddingRecordRepository recordRepository;
 
-    private final EmbeddingRecordStore embeddingRecordStore;
+    private final EmbeddingRecordService recordService;
 
     private final EmbeddingUploadService embeddingUploadService;
 
@@ -66,7 +66,7 @@ public class EmbeddingServiceImpl implements EmbeddingService {
         embeddingStore.removeAll(filter);
 
         //3.原子删除文档记录及其关联Chunk记录
-        embeddingRecordStore.removeRecords(id, docRecord.getFileNameMd5());
+        recordService.removeRecords(id, docRecord.getFileNameMd5());
     }
 
     @Override
