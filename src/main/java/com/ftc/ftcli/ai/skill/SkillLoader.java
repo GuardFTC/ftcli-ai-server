@@ -42,11 +42,12 @@ public class SkillLoader {
         //3.遍历Skill列表
         for (SkillEntity skillBean : skillBeans) {
 
-            //4.获取Skill内容
-            String skillMdContent = skillBean.getSkillMdContent();
+            //4.定义Skill变量
+            Skill skill = null;
 
-            //5.定义Skill变量
-            Skill skill;
+            //5.获取Skill内容，SkillMD内容
+            String skillMdContent = skillBean.getSkillMdContent();
+            String skillMdPath = skillBean.getSkillMdPath();
 
             //6.如果内容不为空，直接构建Skill，否则，从文件中获取
             if (StrUtil.isNotBlank(skillMdContent)) {
@@ -55,12 +56,12 @@ public class SkillLoader {
                         .description(skillBean.getSkillDescription())
                         .content(skillMdContent)
                         .build();
-            } else {
-                skill = ClassPathSkillLoader.loadSkill(skillBean.getSkillMdPath());
+            } else if (StrUtil.isNotBlank(skillMdPath)) {
+                skill = ClassPathSkillLoader.loadSkill(skillMdPath);
             }
 
             //7.如果内容为空，跳过
-            if (StrUtil.isBlank(skill.content())) {
+            if (null == skill) {
                 log.warn("[Skill] 加载失败,无法获取到内容: [{}]", skillBean.getSkillName());
                 continue;
             }
