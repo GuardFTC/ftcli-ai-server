@@ -17,7 +17,7 @@
 
     <properties>
         <java.version>21</java.version>
-        <langchain4j.version>1.12.2-beta22</langchain4j.version>
+        <langchain4j.version>1.17.2-beta27</langchain4j.version>
     </properties>
 
     <dependencies>
@@ -189,6 +189,17 @@
             <scope>test</scope>
         </dependency>
     </dependencies>
+
+    <!-- 使用Maven Central官方源 -->
+    <repositories>
+        <repository>
+            <id>maven-central-direct</id>
+            <name>Maven Central Direct</name>
+            <url>https://repo.maven.apache.org/maven2</url>
+            <releases><enabled>true</enabled></releases>
+            <snapshots><enabled>false</enabled></snapshots>
+        </repository>
+    </repositories>
 
     <build>
         <plugins>
