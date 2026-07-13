@@ -1,10 +1,10 @@
 package com.ftc.ftcli.ai.skill;
 
 import cn.hutool.core.collection.CollUtil;
-import cn.hutool.core.io.resource.ResourceUtil;
 import cn.hutool.core.util.StrUtil;
 import com.ftc.ftcli.entity.skill.SkillEntity;
 import com.ftc.ftcli.infra.sqlite.repository.SkillRepository;
+import dev.langchain4j.skills.ClassPathSkillLoader;
 import dev.langchain4j.skills.Skill;
 import dev.langchain4j.skills.Skills;
 import lombok.RequiredArgsConstructor;
@@ -42,32 +42,37 @@ public class SkillLoader {
         //3.遍历Skill列表
         for (SkillEntity skillBean : skillBeans) {
 
-            //4.获取内容,如果内容为空,从文件中获取
-            String content = StrUtil.isNotBlank(skillBean.getSkillMdContent()) ?
-                    skillBean.getSkillMdContent() :
-                    ResourceUtil.readUtf8Str(skillBean.getSkillMdPath());
+            //4.获取Skill内容
+            String skillMdContent = skillBean.getSkillMdContent();
 
-            //5.如果内容为空，跳过
-            if (StrUtil.isBlank(content)) {
+            //5.定义Skill变量
+            Skill skill;
+
+            //6.如果内容不为空，直接构建Skill，否则，从文件中获取
+            if (StrUtil.isNotBlank(skillMdContent)) {
+                skill = Skill.builder()
+                        .name(skillBean.getSkillName())
+                        .description(skillBean.getSkillDescription())
+                        .content(skillMdContent)
+                        .build();
+            } else {
+                skill = ClassPathSkillLoader.loadSkill(skillBean.getSkillMdPath());
+            }
+
+            //7.如果内容为空，跳过
+            if (StrUtil.isBlank(skill.content())) {
                 log.warn("[Skill] 加载失败,无法获取到内容: [{}]", skillBean.getSkillName());
                 continue;
             }
 
-            //6.创建 Skill
-            Skill skill = Skill.builder()
-                    .name(skillBean.getSkillName())
-                    .description(skillBean.getSkillDescription())
-                    .content(content)
-                    .build();
-
-            //7.存入集合
+            //8.存入集合
             skills.add(skill);
         }
 
-        //8.打印日志
+        //9.打印日志
         log.info("[Skill] 加载完成,共[{}]个技能", skills.size());
 
-        //9.返回
+        //10.返回
         return CollUtil.isEmpty(skills) ? null : Skills.from(skills);
     }
 }
