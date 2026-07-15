@@ -102,6 +102,19 @@
             </exclusions>
         </dependency>
 
+        <!-- langchain4j Elasticsearch Embedding Store依赖 -->
+        <dependency>
+            <groupId>dev.langchain4j</groupId>
+            <artifactId>langchain4j-elasticsearch</artifactId>
+            <version>${langchain4j.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.elasticsearch.client</groupId>
+                    <artifactId>elasticsearch-rest-client</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+
         <!-- langchain4j GitHub文档加载器依赖 -->
         <dependency>
             <groupId>dev.langchain4j</groupId>
@@ -180,6 +193,18 @@
             <groupId>com.vladsch.flexmark</groupId>
             <artifactId>flexmark</artifactId>
             <version>0.64.8</version>
+        </dependency>
+
+        <!-- Elasticsearch Java客户端依赖 -->
+        <dependency>
+            <groupId>co.elastic.clients</groupId>
+            <artifactId>elasticsearch-java</artifactId>
+        </dependency>
+
+        <!-- Elasticsearch 低级REST客户端（LangChain4j ElasticsearchEmbeddingStore 需要） -->
+        <dependency>
+            <groupId>org.elasticsearch.client</groupId>
+            <artifactId>elasticsearch-rest-client</artifactId>
         </dependency>
 
         <!-- 单元测试依赖 -->
