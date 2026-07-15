@@ -5,12 +5,12 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
  * @author 冯铁城 [17615007230@163.com]
- * @date 2026-06-16 16:00:09
- * @describe 内容检索器配置
+ * @date 2026-07-15 20:30:00
+ * @describe ES全文检索器配置
  */
 @Data
-@ConfigurationProperties(prefix = "ai.rag.content-retriever")
-public class ContentRetrieverProperties {
+@ConfigurationProperties(prefix = "ai.rag.content-retriever.es")
+public class EsRetrieverProperties {
 
     /**
      * 检索最大结果数

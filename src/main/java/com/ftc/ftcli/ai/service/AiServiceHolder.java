@@ -10,7 +10,7 @@ import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.model.chat.StreamingChatModel;
 import dev.langchain4j.model.openai.OpenAiTokenCountEstimator;
 import dev.langchain4j.rag.DefaultRetrievalAugmentor;
-import dev.langchain4j.rag.content.aggregator.ReRankingContentAggregator;
+import dev.langchain4j.rag.content.aggregator.ContentAggregator;
 import dev.langchain4j.rag.content.injector.ContentInjector;
 import dev.langchain4j.rag.query.router.QueryRouter;
 import dev.langchain4j.rag.query.transformer.QueryTransformer;
@@ -51,7 +51,7 @@ public class AiServiceHolder {
 
     private final QueryRouter localAiQueryRouter;
 
-    private final ReRankingContentAggregator contentAggregator;
+    private final ContentAggregator contentAggregator;
 
     private final ContentInjector contentInjector;
 

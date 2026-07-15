@@ -135,6 +135,16 @@ public class AiTraceLog {
 
 
     /**
+     * 打印重排序去重日志
+     *
+     * @param originalSize    原始文档数
+     * @param deduplicatedSize 去重后文档数
+     */
+    public static void logRerankDedup(int originalSize, int deduplicatedSize) {
+        log.info("{} 重排序之前去重: 原始文档数=[{}], 去重后=[{}]", PREFIX, originalSize, deduplicatedSize);
+    }
+
+    /**
      * 打印工具调用日志
      *
      * @param toolName  工具名称

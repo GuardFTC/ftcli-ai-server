@@ -74,8 +74,12 @@ ai:
     web-search:
       max-results: 5
     content-retriever:
-      max-results: 5
-      min-score: 0.5
+      chroma:
+        max-results: 5
+        min-score: 0.5
+      es:
+        max-results: 5
+        min-score: 6
     rerank:
       model: jina-reranker-v3
       max-results: 3

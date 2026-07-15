@@ -2,7 +2,8 @@ package com.ftc.ftcli.config.ai.rag;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import com.ftc.ftcli.common.util.ai.AiTraceLog;
-import com.ftc.ftcli.properties.rag.ContentRetrieverProperties;
+import com.ftc.ftcli.properties.rag.ChromaRetrieverProperties;
+import com.ftc.ftcli.properties.rag.EsRetrieverProperties;
 import com.ftc.ftcli.properties.rag.WebSearchProperties;
 import dev.langchain4j.data.segment.TextSegment;
 import dev.langchain4j.model.chat.ChatModel;
@@ -36,7 +37,7 @@ import java.util.Map;
 @Slf4j
 @Configuration
 @RequiredArgsConstructor
-@EnableConfigurationProperties({WebSearchProperties.class, ContentRetrieverProperties.class})
+@EnableConfigurationProperties({WebSearchProperties.class, ChromaRetrieverProperties.class, EsRetrieverProperties.class})
 public class QueryRouterConfig {
 
     private final ChatModel model;
@@ -47,7 +48,9 @@ public class QueryRouterConfig {
 
     private final WebSearchProperties webSearchProperties;
 
-    private final ContentRetrieverProperties contentRetrieverProperties;
+    private final ChromaRetrieverProperties chromaRetrieverProperties;
+
+    private final EsRetrieverProperties esRetrieverProperties;
 
     private final ElasticsearchClient esClient;
 
@@ -66,7 +69,7 @@ public class QueryRouterConfig {
                 .build();
 
         //3.包装检索器，添加追踪日志
-        ContentRetriever tracedRetriever = getTracedRetriever("web检索器", webSearchContentRetriever, 0, 0);
+        ContentRetriever tracedRetriever = getTracedRetriever("web检索器", webSearchContentRetriever);
 
         //7.使用LLM路由：由模型自行判断用户问题是否需要联网检索，替代正则匹配
         return new LanguageModelQueryRouter(model, Map.of(
@@ -81,12 +84,12 @@ public class QueryRouterConfig {
         ContentRetriever chromaStoreRetriever = EmbeddingStoreContentRetriever.builder()
                 .embeddingModel(embeddingModel)
                 .embeddingStore(embeddingStore)
-                .maxResults(contentRetrieverProperties.getMaxResults())
-                .minScore(contentRetrieverProperties.getMinScore())
+                .maxResults(chromaRetrieverProperties.getMaxResults())
+                .minScore(chromaRetrieverProperties.getMinScore())
                 .build();
 
         //2.包装Chroma文档检索器，添加追踪日志
-        ContentRetriever chromaStoreTracedRetriever = getTracedRetriever("chroma检索器", chromaStoreRetriever, 0, 0);
+        ContentRetriever chromaStoreTracedRetriever = getTracedRetriever("chroma检索器", chromaStoreRetriever);
 
         //3.创建ES文档检索器（BM25全文检索）
         ContentRetriever esContentRetriever = ElasticsearchContentRetriever.builder()
@@ -95,7 +98,10 @@ public class QueryRouterConfig {
                 .build();
 
         //4.包装ES文档检索器，添加追踪日志（maxResults/minScore在beta版中未生效，通过应用层过滤）
-        ContentRetriever esStoreTracedRetriever = getTracedRetriever("es检索器", esContentRetriever, 5, 6.0);
+        ContentRetriever esStoreTracedRetriever = getTracedRetriever("es检索器", esContentRetriever,
+                esRetrieverProperties.getMaxResults(),
+                esRetrieverProperties.getMinScore()
+        );
 
         //5.创建自定义查询路由器：默认使用文档检索器
         return query -> {
