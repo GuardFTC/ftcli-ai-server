@@ -1,11 +1,11 @@
 package com.ftc.ftcli.service.embedding.impl;
 
 import cn.hutool.core.collection.CollUtil;
-import com.ftc.ftcli.common.util.embedding.VectorUtil;
 import com.ftc.ftcli.common.enums.doc.ChunkMetaDataKeyEnum;
 import com.ftc.ftcli.common.enums.doc.DocMetaDataKeyEnum;
 import com.ftc.ftcli.common.util.embedding.ChunkUtil;
 import com.ftc.ftcli.common.util.embedding.DocUtil;
+import com.ftc.ftcli.common.util.embedding.VectorUtil;
 import com.ftc.ftcli.entity.embedding.EmbeddingChunkRecordEntity;
 import com.ftc.ftcli.entity.embedding.EmbeddingRecordEntity;
 import com.ftc.ftcli.infra.sqlite.repository.EmbeddingChunkRecordRepository;
@@ -14,7 +14,6 @@ import com.ftc.ftcli.service.embedding.EmbeddingUploadService;
 import dev.langchain4j.data.document.Document;
 import dev.langchain4j.data.document.DocumentSplitter;
 import dev.langchain4j.data.segment.TextSegment;
-import dev.langchain4j.store.embedding.EmbeddingStore;
 import dev.langchain4j.store.embedding.filter.Filter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -39,11 +38,9 @@ public class EmbeddingUploadServiceImpl implements EmbeddingUploadService {
 
     private final DocumentSplitter documentSplitter;
 
-    private final EmbeddingStore<TextSegment> embeddingStore;
+    private final VectorUtil vectorUtil;
 
     private final EmbeddingChunkRecordRepository chunkRecordRepository;
-
-    private final VectorUtil vectorUtil;
 
     private final EmbeddingRecordService recordServiceImpl;
 
@@ -79,7 +76,7 @@ public class EmbeddingUploadServiceImpl implements EmbeddingUploadService {
 
             //8.先删除该文档的向量，避免数据库写入失败导致的孤儿向量，确保幂等
             Filter filter = metadataKey(DocMetaDataKeyEnum.FILE_NAME_MD5.getKey()).isIn(newDocsMap.keySet());
-            embeddingStore.removeAll(filter);
+            vectorUtil.removeAll(filter);
 
             //9.批量向量化并写入向量数据库
             vectorUtil.batchAddAll(newChunks);
@@ -156,7 +153,7 @@ public class EmbeddingUploadServiceImpl implements EmbeddingUploadService {
             Filter filter = buildDelteChunkFilter(addOrUpdateChunks, removeChunks);
 
             //14.先删除该文档的向量，避免数据库写入失败导致的孤儿向量，确保幂等
-            embeddingStore.removeAll(filter);
+            vectorUtil.removeAll(filter);
 
             //15.如果 新增/更新的chunk列表 不为空
             if (CollUtil.isNotEmpty(addOrUpdateChunks)) {

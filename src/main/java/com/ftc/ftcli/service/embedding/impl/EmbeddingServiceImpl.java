@@ -8,14 +8,13 @@ import com.ftc.ftcli.common.enums.doc.DocLoaderEnum;
 import com.ftc.ftcli.common.enums.doc.DocMetaDataKeyEnum;
 import com.ftc.ftcli.common.payload.EmbeddingFileUploadPayload;
 import com.ftc.ftcli.common.result.EmbeddingFileUploadResult;
+import com.ftc.ftcli.common.util.embedding.VectorUtil;
 import com.ftc.ftcli.entity.embedding.EmbeddingRecordEntity;
 import com.ftc.ftcli.infra.sqlite.repository.EmbeddingRecordRepository;
 import com.ftc.ftcli.service.embedding.EmbeddingRecordService;
 import com.ftc.ftcli.service.embedding.EmbeddingService;
 import com.ftc.ftcli.service.embedding.EmbeddingUploadService;
 import dev.langchain4j.data.document.Document;
-import dev.langchain4j.data.segment.TextSegment;
-import dev.langchain4j.store.embedding.EmbeddingStore;
 import dev.langchain4j.store.embedding.filter.Filter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -38,7 +37,7 @@ import static dev.langchain4j.store.embedding.filter.MetadataFilterBuilder.metad
 @RequiredArgsConstructor
 public class EmbeddingServiceImpl implements EmbeddingService {
 
-    private final EmbeddingStore<TextSegment> embeddingStore;
+    private final VectorUtil vectorUtil;
 
     private final EmbeddingRecordRepository recordRepository;
 
@@ -63,7 +62,7 @@ public class EmbeddingServiceImpl implements EmbeddingService {
 
         //2.删除向量数据库向量
         Filter filter = metadataKey(DocMetaDataKeyEnum.FILE_NAME_MD5.getKey()).isEqualTo(docRecord.getFileNameMd5());
-        embeddingStore.removeAll(filter);
+        vectorUtil.removeAll(filter);
 
         //3.原子删除文档记录及其关联Chunk记录
         recordService.removeRecords(id, docRecord.getFileNameMd5());

@@ -1,5 +1,6 @@
 package com.ftc.ftcli.config.ai.embedding;
 
+import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import com.ftc.ftcli.properties.embedding.GithubProperties;
 import com.ftc.ftcli.properties.embedding.ModelProperties;
 import com.ftc.ftcli.properties.embedding.StoreChromaProperties;
@@ -9,11 +10,14 @@ import dev.langchain4j.model.embedding.EmbeddingModel;
 import dev.langchain4j.store.embedding.EmbeddingStore;
 import dev.langchain4j.store.embedding.chroma.ChromaApiVersion;
 import dev.langchain4j.store.embedding.chroma.ChromaEmbeddingStore;
+import dev.langchain4j.store.embedding.elasticsearch.ElasticsearchConfigurationFullText;
+import dev.langchain4j.store.embedding.elasticsearch.ElasticsearchEmbeddingStore;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 
 /**
  * @author 冯铁城 [17615007230@163.com]
@@ -30,6 +34,8 @@ public class BaseConfig {
 
     private final StoreChromaProperties storeChromaProperties;
 
+    private final ElasticsearchClient esClient;
+
     @Bean
     public EmbeddingModel embeddingModel() {
         return ZhipuAiEmbeddingModel.builder()
@@ -39,6 +45,7 @@ public class BaseConfig {
     }
 
     @Bean
+    @Primary
     public EmbeddingStore<TextSegment> embeddingStore() {
         return ChromaEmbeddingStore.builder()
                 .baseUrl(storeChromaProperties.getUrl())
@@ -48,6 +55,15 @@ public class BaseConfig {
                 .collectionName(storeChromaProperties.getCollection())
                 .logRequests(false)
                 .logResponses(false)
+                .build();
+    }
+
+    @Bean
+    public EmbeddingStore<TextSegment> esEmbeddingStore() {
+        return ElasticsearchEmbeddingStore.builder()
+                .client(esClient)
+                .configuration(ElasticsearchConfigurationFullText.builder().build())
+                .indexName("default")
                 .build();
     }
 }
