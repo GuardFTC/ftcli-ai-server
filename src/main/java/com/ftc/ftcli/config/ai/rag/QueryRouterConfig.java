@@ -91,8 +91,6 @@ public class QueryRouterConfig {
         //3.创建ES文档检索器（BM25全文检索）
         ContentRetriever esContentRetriever = ElasticsearchContentRetriever.builder()
                 .client(esClient)
-                .maxResults(5)
-                .minScore(6)
                 .configuration(ElasticsearchConfigurationFullText.builder().build())
                 .build();
 
