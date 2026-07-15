@@ -63,7 +63,6 @@ public class BaseConfig {
         return ElasticsearchEmbeddingStore.builder()
                 .client(esClient)
                 .configuration(ElasticsearchConfigurationFullText.builder().build())
-                .indexName("default")
                 .build();
     }
 }

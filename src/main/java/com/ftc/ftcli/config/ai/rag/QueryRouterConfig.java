@@ -1,5 +1,6 @@
 package com.ftc.ftcli.config.ai.rag;
 
+import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import com.ftc.ftcli.common.util.ai.AiTraceLog;
 import com.ftc.ftcli.properties.rag.ContentRetrieverProperties;
 import com.ftc.ftcli.properties.rag.WebSearchProperties;
@@ -7,12 +8,15 @@ import dev.langchain4j.data.segment.TextSegment;
 import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.model.embedding.EmbeddingModel;
 import dev.langchain4j.rag.content.Content;
+import dev.langchain4j.rag.content.ContentMetadata;
 import dev.langchain4j.rag.content.retriever.ContentRetriever;
 import dev.langchain4j.rag.content.retriever.EmbeddingStoreContentRetriever;
 import dev.langchain4j.rag.content.retriever.WebSearchContentRetriever;
+import dev.langchain4j.rag.content.retriever.elasticsearch.ElasticsearchContentRetriever;
 import dev.langchain4j.rag.query.router.LanguageModelQueryRouter;
 import dev.langchain4j.rag.query.router.QueryRouter;
 import dev.langchain4j.store.embedding.EmbeddingStore;
+import dev.langchain4j.store.embedding.elasticsearch.ElasticsearchConfigurationFullText;
 import dev.langchain4j.web.search.WebSearchEngine;
 import dev.langchain4j.web.search.tavily.TavilyWebSearchEngine;
 import lombok.RequiredArgsConstructor;
@@ -45,6 +49,8 @@ public class QueryRouterConfig {
 
     private final ContentRetrieverProperties contentRetrieverProperties;
 
+    private final ElasticsearchClient esClient;
+
     @Bean
     public QueryRouter webAiQueryRouter() {
 
@@ -60,18 +66,7 @@ public class QueryRouterConfig {
                 .build();
 
         //3.包装检索器，添加追踪日志
-        ContentRetriever tracedRetriever = query -> {
-
-            //4.检索
-            List<Content> contents = webSearchContentRetriever.retrieve(query);
-
-            //5.打印检索日志
-            AiTraceLog.logRetrievalQuery(query.text());
-            AiTraceLog.logRetrievalResults(contents);
-
-            //6.返回文档
-            return contents;
-        };
+        ContentRetriever tracedRetriever = getTracedRetriever("web检索器", webSearchContentRetriever, 0, 0);
 
         //7.使用LLM路由：由模型自行判断用户问题是否需要联网检索，替代正则匹配
         return new LanguageModelQueryRouter(model, Map.of(
@@ -82,33 +77,90 @@ public class QueryRouterConfig {
     @Bean
     public QueryRouter localAiQueryRouter() {
 
-        //1.创建文档检索器
-        ContentRetriever contentRetriever = EmbeddingStoreContentRetriever.builder()
+        //1.创建Chroma文档检索器
+        ContentRetriever chromaStoreRetriever = EmbeddingStoreContentRetriever.builder()
                 .embeddingModel(embeddingModel)
                 .embeddingStore(embeddingStore)
                 .maxResults(contentRetrieverProperties.getMaxResults())
                 .minScore(contentRetrieverProperties.getMinScore())
                 .build();
 
-        //2.包装检索器，添加追踪日志
-        ContentRetriever tracedRetriever = query -> {
+        //2.包装Chroma文档检索器，添加追踪日志
+        ContentRetriever chromaStoreTracedRetriever = getTracedRetriever("chroma检索器", chromaStoreRetriever, 0, 0);
 
-            //3.检索
+        //3.创建ES文档检索器（BM25全文检索）
+        ContentRetriever esContentRetriever = ElasticsearchContentRetriever.builder()
+                .client(esClient)
+                .maxResults(5)
+                .minScore(6)
+                .configuration(ElasticsearchConfigurationFullText.builder().build())
+                .build();
+
+        //4.包装ES文档检索器，添加追踪日志（maxResults/minScore在beta版中未生效，通过应用层过滤）
+        ContentRetriever esStoreTracedRetriever = getTracedRetriever("es检索器", esContentRetriever, 5, 6.0);
+
+        //5.创建自定义查询路由器：默认使用文档检索器
+        return query -> {
+
+            //6.返回检索器
+            return List.of(chromaStoreTracedRetriever, esStoreTracedRetriever);
+        };
+    }
+
+    /**
+     * 包装检索器，添加追踪日志
+     *
+     * @param title            检索器标题
+     * @param contentRetriever 检索器
+     * @return 包装后的检索器
+     */
+    private static ContentRetriever getTracedRetriever(String title, ContentRetriever contentRetriever) {
+        return getTracedRetriever(title, contentRetriever, 0, 0);
+    }
+
+    /**
+     * 包装检索器，添加追踪日志，并支持应用层过滤
+     *
+     * @param title            检索器标题
+     * @param contentRetriever 检索器
+     * @param maxResults       最大返回条数（0表示不限制）
+     * @param minScore         最小分数阈值（0表示不过滤）
+     * @return 包装后的检索器
+     */
+    private static ContentRetriever getTracedRetriever(String title, ContentRetriever contentRetriever, int maxResults, double minScore) {
+        return query -> {
+
+            //1.检索
             List<Content> contents = contentRetriever.retrieve(query);
 
+            //2.按minScore过滤，将分数小于minScore的文档过滤掉
+            if (minScore > 0) {
+                contents = contents.stream()
+                        .filter(c -> {
+                            Object scoreObj = c.metadata().get(ContentMetadata.SCORE);
+                            return scoreObj != null && ((Number) scoreObj).doubleValue() >= minScore;
+                        })
+                        .toList();
+            }
+
+            //3.按score降序排列并限制条数
+            if (maxResults > 0 && contents.size() > maxResults) {
+                contents = contents.stream()
+                        .sorted((a, b) -> {
+                            double scoreA = ((Number) a.metadata().getOrDefault(ContentMetadata.SCORE, 0.0)).doubleValue();
+                            double scoreB = ((Number) b.metadata().getOrDefault(ContentMetadata.SCORE, 0.0)).doubleValue();
+                            return Double.compare(scoreB, scoreA);
+                        })
+                        .limit(maxResults)
+                        .toList();
+            }
+
             //4.打印检索日志
-            AiTraceLog.logRetrievalQuery(query.text());
-            AiTraceLog.logRetrievalResults(contents);
+            AiTraceLog.logRetrievalQuery(title, query.text());
+            AiTraceLog.logRetrievalResults(title, contents);
 
             //5.返回文档
             return contents;
-        };
-
-        //7.创建自定义查询路由器：默认使用文档检索器
-        return query -> {
-
-            //8.返回检索器
-            return List.of(tracedRetriever);
         };
     }
 }

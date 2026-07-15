@@ -24,24 +24,32 @@ import java.util.List;
 @EnableConfigurationProperties(StoreProperties.class)
 public class VectorUtil {
 
-    private final StoreProperties storeProperties;
-
     private final EmbeddingModel embeddingModel;
 
     private final EmbeddingStore<TextSegment> embeddingStore;
 
     private final EmbeddingStore<TextSegment> esEmbeddingStore;
 
+    private final StoreProperties storeProperties;
+
+    /**
+     * 构造函数
+     *
+     * @param storeProperties  向量数据库属性
+     * @param embeddingModel   向量模型
+     * @param embeddingStore   Chroma向量数据库
+     * @param esEmbeddingStore ES向量数据库
+     */
     public VectorUtil(
-            StoreProperties storeProperties,
             EmbeddingModel embeddingModel,
             @Qualifier("embeddingStore") EmbeddingStore<TextSegment> embeddingStore,
-            @Qualifier("esEmbeddingStore") EmbeddingStore<TextSegment> esEmbeddingStore
+            @Qualifier("esEmbeddingStore") EmbeddingStore<TextSegment> esEmbeddingStore,
+            StoreProperties storeProperties
     ) {
-        this.storeProperties = storeProperties;
         this.embeddingModel = embeddingModel;
         this.embeddingStore = embeddingStore;
         this.esEmbeddingStore = esEmbeddingStore;
+        this.storeProperties = storeProperties;
     }
 
     /**

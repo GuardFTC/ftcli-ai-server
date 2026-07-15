@@ -47,21 +47,23 @@ public class AiTraceLog {
     /**
      * 打印检索查询日志
      *
+     * @param title     检索器标题
      * @param queryText 检索查询文本
      */
-    public static void logRetrievalQuery(String queryText) {
-        log.info("{} 检索查询: [{}]", PREFIX, queryText);
+    public static void logRetrievalQuery(String title, String queryText) {
+        log.info("{} {} 检索查询: [{}]", PREFIX, title, queryText);
     }
 
     /**
      * 打印检索命中日志
      *
+     * @param title    检索器标题
      * @param contents 检索结果
      */
-    public static void logRetrievalResults(List<Content> contents) {
+    public static void logRetrievalResults(String title, List<Content> contents) {
 
         //1.打印检索条数
-        log.info("{} 检索命中: [{}]条", PREFIX, contents.size());
+        log.info("{} {} 检索命中: [{}]条", PREFIX, title, contents.size());
 
         //2.遍历检索结果
         for (Content content : contents) {
