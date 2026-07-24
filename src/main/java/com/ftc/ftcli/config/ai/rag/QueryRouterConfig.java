@@ -2,6 +2,7 @@ package com.ftc.ftcli.config.ai.rag;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import com.ftc.ftcli.common.util.ai.AiTraceLog;
+import com.ftc.ftcli.properties.embedding.StoreESProperties;
 import com.ftc.ftcli.properties.rag.ChromaRetrieverProperties;
 import com.ftc.ftcli.properties.rag.EsRetrieverProperties;
 import com.ftc.ftcli.properties.rag.WebSearchProperties;
@@ -52,6 +53,8 @@ public class QueryRouterConfig {
 
     private final EsRetrieverProperties esRetrieverProperties;
 
+    private final StoreESProperties storeESProperties;
+
     private final ElasticsearchClient esClient;
 
     @Bean
@@ -94,6 +97,7 @@ public class QueryRouterConfig {
         //3.创建ES文档检索器（BM25全文检索）
         ContentRetriever esContentRetriever = ElasticsearchContentRetriever.builder()
                 .client(esClient)
+                .indexName(storeESProperties.getIndex())
                 .configuration(ElasticsearchConfigurationFullText.builder().build())
                 .build();
 

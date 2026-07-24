@@ -1,6 +1,7 @@
 package com.ftc.ftcli.properties.embedding;
 
 import cn.hutool.core.util.StrUtil;
+import com.ftc.ftcli.common.util.os.OsUtil;
 import jakarta.annotation.PostConstruct;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
@@ -48,39 +49,30 @@ public class StoreChromaProperties {
     @PostConstruct
     public void initOsSpecificConfig() {
 
-        //1.如果未配置 osSuffix，自动检测操作系统
+        //1.定义完整后缀
+        String suffix;
+
+        //2.如果未配置 osSuffix，根据操作系统设置后缀，否使用配置的后缀
         if (StrUtil.isBlank(osSuffix)) {
-
-            //2.获取系统名称
-            String osName = System.getProperty("os.name").toLowerCase();
-
-            //3.根据系统名称，设置系统后缀
-            if (osName.contains("mac") || osName.contains("darwin")) {
-                osSuffix = "mac";
-            } else if (osName.contains("win")) {
-                osSuffix = "windows";
-            } else if (osName.contains("nix") || osName.contains("nux") || osName.contains("aix")) {
-                osSuffix = "linux";
-            } else {
-                osSuffix = "unknown";
-            }
-
-            //4.打印日志
-            log.info("[Chroma配置] 自动检测操作系统: {}, 使用后缀: {}", osName, osSuffix);
+            suffix = StrUtil.UNDERLINE + OsUtil.OS_SUFFIX;
         } else {
-            log.info("[Chroma配置] 使用手动配置的操作系统后缀: {}", osSuffix);
+            suffix = StrUtil.UNDERLINE + osSuffix;
         }
 
-        //5.为 database 和 collection 追加后缀（避免重复追加）
-        String suffix = "_" + osSuffix;
+        //3.打印日志
+        log.info("[Chroma配置] 初始化数据库和集合名称后缀:[{}]", suffix);
+
+        //3.拼接数据库后缀
         if (!database.endsWith(suffix)) {
             database = database + suffix;
         }
+
+        //5.拼接集合后缀
         if (!collection.endsWith(suffix)) {
             collection = collection + suffix;
         }
 
         //6.打印日志
-        log.info("[Chroma配置] 最终配置 - database: {}, collection: {}", database, collection);
+        log.info("[Chroma配置] 最终配置 - database:[{}], collection:[{}]", database, collection);
     }
 }

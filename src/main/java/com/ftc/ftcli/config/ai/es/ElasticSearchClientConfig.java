@@ -31,7 +31,7 @@ public class ElasticSearchClientConfig {
     public ElasticsearchClient esClient() {
 
         //1.创建HTTPHost
-        HttpHost.create(esProperties.getUrl());
+        HttpHost httpHost = HttpHost.create(esProperties.getUrl());
 
         //2.创建鉴权请求头
         Header[] authorizations = {
@@ -40,7 +40,7 @@ public class ElasticSearchClientConfig {
 
         //3.创建RestClient
         RestClient restClient = RestClient
-                .builder(HttpHost.create(esProperties.getUrl()))
+                .builder(httpHost)
                 .setDefaultHeaders(authorizations)
                 .build();
 

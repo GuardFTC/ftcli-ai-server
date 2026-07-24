@@ -4,6 +4,7 @@ import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import com.ftc.ftcli.properties.embedding.GithubProperties;
 import com.ftc.ftcli.properties.embedding.ModelProperties;
 import com.ftc.ftcli.properties.embedding.StoreChromaProperties;
+import com.ftc.ftcli.properties.embedding.StoreESProperties;
 import dev.langchain4j.community.model.zhipu.ZhipuAiEmbeddingModel;
 import dev.langchain4j.data.segment.TextSegment;
 import dev.langchain4j.model.embedding.EmbeddingModel;
@@ -34,6 +35,8 @@ public class BaseConfig {
 
     private final StoreChromaProperties storeChromaProperties;
 
+    private final StoreESProperties storeESProperties;
+
     private final ElasticsearchClient esClient;
 
     @Bean
@@ -63,6 +66,7 @@ public class BaseConfig {
         return ElasticsearchEmbeddingStore.builder()
                 .client(esClient)
                 .configuration(ElasticsearchConfigurationFullText.builder().build())
+                .indexName(storeESProperties.getIndex())
                 .build();
     }
 }

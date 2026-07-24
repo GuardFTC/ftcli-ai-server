@@ -65,6 +65,7 @@ ai:
         collection: langchain4j_coll
       elastic-search:
         url: ${ELASTIC_SEARCH_URL:http://10.6.4.62:9200}
+        index: langchain4j
       batch-size: 50
     ingestor:
       max-segment-size: 2000
